@@ -1,0 +1,6 @@
+config SND_SOC_SG2002
+    tristate "Sophgo SG2002 I2S/TDM support"
+    depends on SND_SOC && OF
+    select SND_SOC_GENERIC_DMAENGINE_PCM
+    help
+      Say Y or M here to enable I2S/TDM support on Sophgo SG2002 SoCs.

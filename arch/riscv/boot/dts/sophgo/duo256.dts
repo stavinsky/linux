@@ -1,0 +1,310 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+* Copyright (C) 2024 Thomas Bonnefille <thomas.bonnefille@bootlin.com>
+*/
+
+/dts-v1/;
+
+#include "sg2002.dtsi"
+
+/ {
+	model = "LicheeRV Nano B";
+	compatible = "sipeed,licheerv-nano-b", "sipeed,licheerv-nano", "sophgo,sg2002";
+	
+	aliases {
+		gpio0 = &gpio0;
+		gpio1 = &gpio1;
+		gpio2 = &gpio2;
+		gpio3 = &gpio3;
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		serial4 = &uart4;
+	};
+	
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+};
+
+&osc {
+	clock-frequency = <25000000>;
+};
+
+&pinctrl {
+	uart0_cfg: uart0-cfg {
+		uart0-pins {
+			pinmux = <PINMUX(PIN_UART0_TX, 0)>,
+			<PINMUX(PIN_UART0_RX, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+	};
+	
+	sdhci0_cfg: sdhci0-cfg {
+		sdhci0-clk-pins {
+			pinmux = <PINMUX(PIN_SD0_CLK, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <16100>;
+			power-source = <3300>;
+		};
+		
+		sdhci0-cmd-pins {
+			pinmux = <PINMUX(PIN_SD0_CMD, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+		
+		sdhci0-data-pins {
+			pinmux = <PINMUX(PIN_SD0_D0, 0)>,
+			<PINMUX(PIN_SD0_D1, 0)>,
+			<PINMUX(PIN_SD0_D2, 0)>,
+			<PINMUX(PIN_SD0_D3, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+		
+		sdhci0-cd-pins {
+			pinmux = <PINMUX(PIN_SD0_CD, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+	};
+	spi2_cfg: spi2_cfg{
+		spi2-pins {
+			pinmux = <PINMUX(PIN_SD1_CLK, 1)>,  /* GP6  -> SPI2_SCK  */
+			<PINMUX(PIN_SD1_CMD, 1)>,  /* GP7  -> SPI2_MOSI */
+			<PINMUX(PIN_SD1_D0,  1)>,  /* GP8  -> SPI2_MISO */
+			<PINMUX(PIN_SD1_D3,  1)>;  /* GP9  -> SPI2_CS   */
+			
+			// bias-disable;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+	};
+	
+	
+};
+
+&sdhci0 {
+	pinctrl-0 = <&sdhci0_cfg>;
+	pinctrl-names = "default";
+	status = "okay";
+	bus-width = <4>;
+	no-1-8-v;
+	no-mmc;
+	no-sdio;
+	disable-wp;
+};
+
+&uart0 {
+	pinctrl-0 = <&uart0_cfg>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&usb {
+	dr_mode = "peripheral";
+	status = "okay";
+	vbus-gpio = <&portb 6 0>;
+	g-rx-fifo-size = <1536>;
+	g-tx-fifo-size = <128 128 64 64 64 64 32 32>;
+};
+
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&spi2_cfg>;
+	pinctrl-names = "default";
+	num-cs = <1>;
+	spi2_dev0: spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+	};
+	
+};
+
+&dmac {
+	status = "okay";
+};
+&dmamux {
+	status = "okay";
+};
+&pinctrl {
+	i2s2_cfg: i2s2_cfg{
+		i2s2-out {
+			pinmux = <PINMUX(PIN_ETH_TXM, 7)>,
+			<PINMUX(PIN_ETH_RXP,  7)>,
+			<PINMUX(PIN_ETH_RXM,  7)>;
+			
+			bias-disable;
+			drive-strength-microamp = <15700>;
+			power-source = <1800>;
+		};
+		i2s2-in {
+			pinmux = <PINMUX(PIN_ETH_TXP, 7)>;
+			
+			// bias-disable;
+			// drive-strength-microamp = <10800>;
+			power-source = <1800>;
+		};
+	};
+};
+/*
+in the base file
+
+*/
+/ {
+	ephy-init {/// delete me!!!!
+		compatible = "sophgo,sg2002-ephy";
+	};
+	aiao: audio-syscon@4108000 {
+		compatible = "sophgo,sg2002-aiao", "syscon";
+		reg = <0x04108000 0x1000>;
+	};
+	i2s0: i2s@4100000 {
+		compatible = "cvitek,cv1835-i2s";
+		reg = <0x04100000 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		aiao = <&aiao>;
+		clocks = <&clk CLK_APB_I2S0>,  <&clk CLK_SDMA_AUD0>;
+		clock-names = "i2s", "mclk";
+		aiao,tdm-id = <0>;
+		dmas = <&dmamux 0 1>, <&dmamux 1 1>;
+		dma-names = "rx", "tx";
+		capability = "txrx";
+		status = "disabled";
+		assigned-clocks = <&clk CLK_SDMA_AUD0>;
+		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
+	};
+	i2s1: i2s@4110000 {
+		compatible = "cvitek,cv1835-i2s";
+		reg = <0x04110000 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <0>;// check if can be dropped
+		aiao = <&aiao>;
+		clocks = <&clk CLK_APB_I2S1>,  <&clk CLK_SDMA_AUD1>;
+		clock-names = "i2s", "mclk";
+		aiao,tdm-id = <1>;
+		dmas = <&dmamux 2 1>, <&dmamux 3 1>;
+		dma-names = "rx", "tx";
+		capability = "txrx";
+		status = "disabled";
+		assigned-clocks = <&clk CLK_SDMA_AUD1>;
+		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
+	};
+	i2s2: i2s@4120000 {
+		compatible = "cvitek,cv1835-i2s";
+		reg = <0x04120000 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		aiao = <&aiao>;
+		clocks = <&clk CLK_APB_I2S2>,  <&clk CLK_SDMA_AUD2>;
+		clock-names = "i2s", "mclk";
+		aiao,tdm-id = <2>;
+		dmas = <&dmamux 4 1>, <&dmamux 5 1>;
+		dma-names = "rx", "tx";
+		capability = "txrx";
+		status = "disabled";
+		assigned-clocks = <&clk CLK_SDMA_AUD2>;
+		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
+	};
+	i2s3: i2s@4130000 {
+		compatible = "cvitek,cv1835-i2s";
+		reg = <0x04130000 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		aiao = <&aiao>;
+		clocks = <&clk CLK_APB_I2S3>,  <&clk CLK_SDMA_AUD3>;
+		clock-names = "i2s", "mclk";
+		aiao,tdm-id = <3>;
+		dmas = <&dmamux 6 1>, <&dmamux 7 1>;
+		dma-names = "rx", "tx";
+		capability = "txrx";
+		status = "disabled";
+		assigned-clocks = <&clk CLK_SDMA_AUD3>;
+		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
+	};
+};
+&i2s1 {
+	pinctrl-0 = <&i2s2_cfg>;
+	pinctrl-names = "default";
+	#sound-dai-cells = <0>;
+	capability = "tx";
+	sg,sdo-out = <6>;
+	sg,fs-in = <2>;
+	sg,sclk-in = <2>;
+	
+	status = "okay";
+	
+};
+&i2s2 {
+	pinctrl-0 = <&i2s2_cfg>;
+	pinctrl-names = "default";
+	sg,only-clock;
+	sg,tdm-master;// set master to enable clocks lrck/bclk output
+	sg,sdo-out = <5>;
+	status = "okay";
+};
+&i2s3 {
+	pinctrl-0 = <&i2s2_cfg>;
+	pinctrl-names = "default";
+	#sound-dai-cells = <0>;
+	capability = "rx";
+	sg,sdi-in = <6>;
+	sg,fs-in = <2>;
+	sg,sclk-in = <2>;
+	
+	status = "okay";
+};
+
+
+
+/ {
+	codec0: dummy-codec@0 {
+		compatible = "invensense,ics43432";
+		#sound-dai-cells = <0>;
+	};
+	codec1: dummy-codec@1 {
+		compatible = "maxim,max98360a";
+		#sound-dai-cells = <0>;
+	};
+	sound_rx {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "sg2002-i2s-rx";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound_rx_cpu>;
+		simple-audio-card,frame-master = <&sound_rx_cpu>;
+		
+		
+		sound_rx_cpu: simple-audio-card,cpu {
+			sound-dai = <&i2s3>;
+		};
+		
+		simple-audio-card,codec {
+			sound-dai = <&codec0>;// real codec node, or whatever you have
+		};
+	};
+	sound_tx {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "sg2002-i2s-tx";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound_tx_cpu>;
+		simple-audio-card,frame-master = <&sound_tx_cpu>;
+		
+		
+		sound_tx_cpu: simple-audio-card,cpu {
+			sound-dai = <&i2s1>;
+		};
+		
+		simple-audio-card,codec {
+			sound-dai = <&codec1>;// real codec node, or whatever you have
+		};
+	};
+};
