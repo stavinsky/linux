@@ -696,7 +696,7 @@ static void sg2002_i2s_remove(struct platform_device *pdev)
 
 static const struct of_device_id sg2002_i2s_of_match[] = {
 	{
-		.compatible = "cvitek,cv1835-i2s",
+		.compatible = "cvitek,cv1800b-i2s",
 	},
 	{ /* sentinel */ }
 };

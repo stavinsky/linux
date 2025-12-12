@@ -8,7 +8,7 @@
 #include "sg2002.dtsi"
 
 / {
-	model = "LicheeRV Nano B";
+	model = "Milk-V duo 256M";
 	compatible = "sipeed,licheerv-nano-b", "sipeed,licheerv-nano", "sophgo,sg2002";
 	
 	aliases {
@@ -75,18 +75,7 @@
 			power-source = <3300>;
 		};
 	};
-	spi2_cfg: spi2_cfg{
-		spi2-pins {
-			pinmux = <PINMUX(PIN_SD1_CLK, 1)>,  /* GP6  -> SPI2_SCK  */
-			<PINMUX(PIN_SD1_CMD, 1)>,  /* GP7  -> SPI2_MOSI */
-			<PINMUX(PIN_SD1_D0,  1)>,  /* GP8  -> SPI2_MISO */
-			<PINMUX(PIN_SD1_D3,  1)>;  /* GP9  -> SPI2_CS   */
-			
-			// bias-disable;
-			drive-strength-microamp = <10800>;
-			power-source = <3300>;
-		};
-	};
+	
 	
 	
 };
@@ -102,12 +91,6 @@
 	disable-wp;
 };
 
-&uart0 {
-	pinctrl-0 = <&uart0_cfg>;
-	pinctrl-names = "default";
-	status = "okay";
-};
-
 &usb {
 	dr_mode = "peripheral";
 	status = "okay";
@@ -116,6 +99,26 @@
 	g-tx-fifo-size = <128 128 64 64 64 64 32 32>;
 };
 
+&uart0 {
+	pinctrl-0 = <&uart0_cfg>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+/// spi  begin
+&pinctrl {
+	spi2_cfg: spi2_cfg{
+		spi2-pins {
+			pinmux = <PINMUX(PIN_SD1_CLK, 1)>,  /* GP6  -> SPI2_SCK  */
+			<PINMUX(PIN_SD1_CMD, 1)>,  /* GP7  -> SPI2_MOSI */
+			<PINMUX(PIN_SD1_D0,  1)>,  /* GP8  -> SPI2_MISO */
+			<PINMUX(PIN_SD1_D3,  1)>;  /* GP9  -> SPI2_CS   */
+			
+			// bias-disable;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+	};
+};
 &spi2 {
 	status = "okay";
 	pinctrl-0 = <&spi2_cfg>;
@@ -128,6 +131,9 @@
 	};
 	
 };
+/// spi end
+
+
 
 &dmac {
 	status = "okay";
@@ -148,9 +154,6 @@
 		};
 		i2s2-in {
 			pinmux = <PINMUX(PIN_ETH_TXP, 7)>;
-			
-			// bias-disable;
-			// drive-strength-microamp = <10800>;
 			power-source = <1800>;
 		};
 	};
@@ -163,74 +166,7 @@ in the base file
 	ephy-init {/// delete me!!!!
 		compatible = "sophgo,sg2002-ephy";
 	};
-	aiao: audio-syscon@4108000 {
-		compatible = "sophgo,sg2002-aiao", "syscon";
-		reg = <0x04108000 0x1000>;
-	};
-	i2s0: i2s@4100000 {
-		compatible = "cvitek,cv1835-i2s";
-		reg = <0x04100000 0x10000>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-		aiao = <&aiao>;
-		clocks = <&clk CLK_APB_I2S0>,  <&clk CLK_SDMA_AUD0>;
-		clock-names = "i2s", "mclk";
-		aiao,tdm-id = <0>;
-		dmas = <&dmamux 0 1>, <&dmamux 1 1>;
-		dma-names = "rx", "tx";
-		capability = "txrx";
-		status = "disabled";
-		assigned-clocks = <&clk CLK_SDMA_AUD0>;
-		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
-	};
-	i2s1: i2s@4110000 {
-		compatible = "cvitek,cv1835-i2s";
-		reg = <0x04110000 0x10000>;
-		#address-cells = <1>;
-		#size-cells = <0>;// check if can be dropped
-		aiao = <&aiao>;
-		clocks = <&clk CLK_APB_I2S1>,  <&clk CLK_SDMA_AUD1>;
-		clock-names = "i2s", "mclk";
-		aiao,tdm-id = <1>;
-		dmas = <&dmamux 2 1>, <&dmamux 3 1>;
-		dma-names = "rx", "tx";
-		capability = "txrx";
-		status = "disabled";
-		assigned-clocks = <&clk CLK_SDMA_AUD1>;
-		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
-	};
-	i2s2: i2s@4120000 {
-		compatible = "cvitek,cv1835-i2s";
-		reg = <0x04120000 0x10000>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-		aiao = <&aiao>;
-		clocks = <&clk CLK_APB_I2S2>,  <&clk CLK_SDMA_AUD2>;
-		clock-names = "i2s", "mclk";
-		aiao,tdm-id = <2>;
-		dmas = <&dmamux 4 1>, <&dmamux 5 1>;
-		dma-names = "rx", "tx";
-		capability = "txrx";
-		status = "disabled";
-		assigned-clocks = <&clk CLK_SDMA_AUD2>;
-		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
-	};
-	i2s3: i2s@4130000 {
-		compatible = "cvitek,cv1835-i2s";
-		reg = <0x04130000 0x10000>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-		aiao = <&aiao>;
-		clocks = <&clk CLK_APB_I2S3>,  <&clk CLK_SDMA_AUD3>;
-		clock-names = "i2s", "mclk";
-		aiao,tdm-id = <3>;
-		dmas = <&dmamux 6 1>, <&dmamux 7 1>;
-		dma-names = "rx", "tx";
-		capability = "txrx";
-		status = "disabled";
-		assigned-clocks = <&clk CLK_SDMA_AUD3>;
-		assigned-clock-rates = <49152000>;// todo make it configurable by hw formats 
-	};
+	
 };
 &i2s1 {
 	pinctrl-0 = <&i2s2_cfg>;
@@ -288,7 +224,7 @@ in the base file
 		};
 		
 		simple-audio-card,codec {
-			sound-dai = <&codec0>;// real codec node, or whatever you have
+			sound-dai = <&codec0>;
 		};
 	};
 	sound_tx {
@@ -304,7 +240,7 @@ in the base file
 		};
 		
 		simple-audio-card,codec {
-			sound-dai = <&codec1>;// real codec node, or whatever you have
+			sound-dai = <&codec1>;
 		};
 	};
 };
