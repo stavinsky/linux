@@ -17,96 +17,97 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 
-const struct regmap_config aiao_regmap_cfg = {
-	.name = "tdm",
+const struct regmap_config cv1800b_regmap_config = {
+	.name = "cv1800b-i2s",
 	.reg_bits = 32,
 	.reg_stride = 4,
 	.val_bits = 32,
 };
 
-/// aiao fiels
-#define I2S_TDM_SCLK_IN_SEL 0x000
-#define I2S_TDM_FS_IN_SEL 0x004
-#define I2S_TDM_SDI_IN_SEL 0x008
-#define I2S_TDM_SDO_OUT_SEL 0x00c
-#define I2S_BCLK_OEN_SEL 0x030
-#define AUDIO_PDM_CTRL 0x040
-#define I2S_SYS_INT_EN 0x060
-#define I2S_SYS_INTS 0x064
-/// tdm registers
-#define I2S_BLK_MODE_SETTING 0x000
-#define I2S_FRAME_SETTING 0x004
-#define I2S_SLOT_SETTING1 0x008
-#define I2S_SLOT_SETTING2 0x00C
-#define I2S_DATA_FORMAT 0x010
-#define I2S_BLK_CFG 0x014
-#define I2S_I2S_ENABLE 0x018
-#define I2S_I2S_RESET 0x01C
-#define I2S_I2S_INT_EN 0x020
-#define I2S_I2S_INT 0x024
-#define I2S_FIFO_THRESHOLD 0x028
-#define I2S_LRCK_MASTER 0x02C
-#define I2S_FIFO_RESET 0x030
-#define I2S_RX_STATUS 0x040
-#define I2S_TX_STATUS 0x048
-#define I2S_CLK_CTRL0 0x060
-#define I2S_CLK_CTRL1 0x064
-#define I2S_PCM_SYNTH 0x068
-#define I2S_RX_RD_PORT 0x080
-#define I2S_TX_WR_PORT 0x0C0
+/* AIAO fields */
+#define CV1800B_I2S_TDM_SCLK_IN_SEL 0x000
+#define CV1800B_I2S_TDM_FS_IN_SEL 0x004
+#define CV1800B_I2S_TDM_SDI_IN_SEL 0x008
+#define CV1800B_I2S_TDM_SDO_OUT_SEL 0x00c
+#define CV1800B_I2S_BCLK_OEN_SEL 0x030
+#define CV1800B_AUDIO_PDM_CTRL 0x040
+#define CV1800B_I2S_SYS_INT_EN 0x060
+#define CV1800B_I2S_SYS_INTS 0x064
+/* tdm registers */
+#define CV1800B_BLK_MODE_SETTING 0x000
+#define CV1800B_FRAME_SETTING 0x004
+#define CV1800B_SLOT_SETTING1 0x008
+#define CV1800B_SLOT_SETTING2 0x00C
+#define CV1800B_DATA_FORMAT 0x010
+#define CV1800B_BLK_CFG 0x014
+#define CV1800B_I2S_ENABLE 0x018
+#define CV1800B_I2S_RESET 0x01C
+#define CV1800B_I2S_INT_EN 0x020
+#define CV1800B_I2S_INT 0x024
+#define CV1800B_FIFO_THRESHOLD 0x028
+#define CV1800B_LRCK_MASTER 0x02C
+#define CV1800B_FIFO_RESET 0x030
+#define CV1800B_RX_STATUS 0x040
+#define CV1800B_TX_STATUS 0x048
+#define CV1800B_CLK_CTRL0 0x060
+#define CV1800B_CLK_CTRL1 0x064
+#define CV1800B_PCM_SYNTH 0x068
+#define CV1800B_RX_RD_PORT 0x080
+#define CV1800B_TX_WR_PORT 0x0C0
 
-enum sg_i2s_capability {
-	SG_I2S_CAP_RX,
-	SG_I2S_CAP_TX,
-	SG_I2S_CAP_TXRX,
+enum cv1800b_i2s_capability {
+	CV1800B_I2S_CAP_RX,
+	CV1800B_I2S_CAP_TX,
+	CV1800B_I2S_CAP_TXRX,
 };
 
-enum aiao_fields {
+enum cv1800b_aiao_fields {
 
-	F_I2S_TDM_0_SCLK_IN_SEL,
-	F_I2S_TDM_1_SCLK_IN_SEL,
-	F_I2S_TDM_2_SCLK_IN_SEL,
-	F_I2S_TDM_3_SCLK_IN_SEL,
+	F_AIAO_I2S_TDM_0_SCLK_IN_SEL,
+	F_AIAO_I2S_TDM_1_SCLK_IN_SEL,
+	F_AIAO_I2S_TDM_2_SCLK_IN_SEL,
+	F_AIAO_I2S_TDM_3_SCLK_IN_SEL,
 
-	F_I2S_TDM_0_FS_IN_SEL,
-	F_I2S_TDM_1_FS_IN_SEL,
-	F_I2S_TDM_2_FS_IN_SEL,
-	F_I2S_TDM_3_FS_IN_SEL,
-	F_I2S_TDM_0_SDI_IN_SEL,
-	F_I2S_TDM_1_SDI_IN_SEL,
-	F_I2S_TDM_2_SDI_IN_SEL,
-	F_I2S_TDM_3_SDI_IN_SEL,
-	F_I2S_TDM_0_SDO_OUT_SEL,
-	F_I2S_TDM_1_SDO_OUT_SEL,
-	F_I2S_TDM_2_SDO_OUT_SEL,
-	F_I2S_TDM_3_SDO_OUT_SEL,
-	F_AUDIO_PDM_SEL_I2S1,
-	F_AIAO_MAX_FIELDS,
+	F_AIAO_I2S_TDM_0_FS_IN_SEL,
+	F_AIAO_I2S_TDM_1_FS_IN_SEL,
+	F_AIAO_I2S_TDM_2_FS_IN_SEL,
+	F_AIAO_I2S_TDM_3_FS_IN_SEL,
+	F_AIAO_I2S_TDM_0_SDI_IN_SEL,
+	F_AIAO_I2S_TDM_1_SDI_IN_SEL,
+	F_AIAO_I2S_TDM_2_SDI_IN_SEL,
+	F_AIAO_I2S_TDM_3_SDI_IN_SEL,
+	F_AIAO_I2S_TDM_0_SDO_OUT_SEL,
+	F_AIAO_I2S_TDM_1_SDO_OUT_SEL,
+	F_AIAO_I2S_TDM_2_SDO_OUT_SEL,
+	F_AIAO_I2S_TDM_3_SDO_OUT_SEL,
+	F_AIAO_AUDIO_PDM_SEL_I2S1,
+	/* End of register map */
+	CV1800B_AIAO_MAX_FIELDS,
 };
-static const struct reg_field aiao_fields[] = {
-	[F_I2S_TDM_0_SCLK_IN_SEL] = REG_FIELD(I2S_TDM_SCLK_IN_SEL, 0, 2),
-	[F_I2S_TDM_1_SCLK_IN_SEL] = REG_FIELD(I2S_TDM_SCLK_IN_SEL, 4, 6),
-	[F_I2S_TDM_2_SCLK_IN_SEL] = REG_FIELD(I2S_TDM_SCLK_IN_SEL, 8, 10),
-	[F_I2S_TDM_3_SCLK_IN_SEL] = REG_FIELD(I2S_TDM_SCLK_IN_SEL, 12, 14),
+static const struct reg_field cv1800b_aiao_reg_fields[] = {
+	[F_AIAO_I2S_TDM_0_SCLK_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SCLK_IN_SEL, 0, 2),
+	[F_AIAO_I2S_TDM_1_SCLK_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SCLK_IN_SEL, 4, 6),
+	[F_AIAO_I2S_TDM_2_SCLK_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SCLK_IN_SEL, 8, 10),
+	[F_AIAO_I2S_TDM_3_SCLK_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SCLK_IN_SEL, 12, 14),
 
-	[F_I2S_TDM_0_FS_IN_SEL] = REG_FIELD(I2S_TDM_FS_IN_SEL, 0, 2),
-	[F_I2S_TDM_1_FS_IN_SEL] = REG_FIELD(I2S_TDM_FS_IN_SEL, 4, 6),
-	[F_I2S_TDM_2_FS_IN_SEL] = REG_FIELD(I2S_TDM_FS_IN_SEL, 8, 10),
-	[F_I2S_TDM_3_FS_IN_SEL] = REG_FIELD(I2S_TDM_FS_IN_SEL, 12, 14),
+	[F_AIAO_I2S_TDM_0_FS_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_FS_IN_SEL, 0, 2),
+	[F_AIAO_I2S_TDM_1_FS_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_FS_IN_SEL, 4, 6),
+	[F_AIAO_I2S_TDM_2_FS_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_FS_IN_SEL, 8, 10),
+	[F_AIAO_I2S_TDM_3_FS_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_FS_IN_SEL, 12, 14),
 
-	[F_I2S_TDM_0_SDI_IN_SEL] = REG_FIELD(I2S_TDM_SDI_IN_SEL, 0, 2),
-	[F_I2S_TDM_1_SDI_IN_SEL] = REG_FIELD(I2S_TDM_SDI_IN_SEL, 4, 6),
-	[F_I2S_TDM_2_SDI_IN_SEL] = REG_FIELD(I2S_TDM_SDI_IN_SEL, 8, 10),
-	[F_I2S_TDM_3_SDI_IN_SEL] = REG_FIELD(I2S_TDM_SDI_IN_SEL, 12, 14),
+	[F_AIAO_I2S_TDM_0_SDI_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDI_IN_SEL, 0, 2),
+	[F_AIAO_I2S_TDM_1_SDI_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDI_IN_SEL, 4, 6),
+	[F_AIAO_I2S_TDM_2_SDI_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDI_IN_SEL, 8, 10),
+	[F_AIAO_I2S_TDM_3_SDI_IN_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDI_IN_SEL, 12, 14),
 
-	[F_I2S_TDM_0_SDO_OUT_SEL] = REG_FIELD(I2S_TDM_SDO_OUT_SEL, 0, 2),
-	[F_I2S_TDM_1_SDO_OUT_SEL] = REG_FIELD(I2S_TDM_SDO_OUT_SEL, 4, 6),
-	[F_I2S_TDM_2_SDO_OUT_SEL] = REG_FIELD(I2S_TDM_SDO_OUT_SEL, 8, 10),
-	[F_I2S_TDM_3_SDO_OUT_SEL] = REG_FIELD(I2S_TDM_SDO_OUT_SEL, 12, 14),
-	[F_AUDIO_PDM_SEL_I2S1] = REG_FIELD(AUDIO_PDM_CTRL, 1, 1),
+	[F_AIAO_I2S_TDM_0_SDO_OUT_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDO_OUT_SEL, 0, 2),
+	[F_AIAO_I2S_TDM_1_SDO_OUT_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDO_OUT_SEL, 4, 6),
+	[F_AIAO_I2S_TDM_2_SDO_OUT_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDO_OUT_SEL, 8, 10),
+	[F_AIAO_I2S_TDM_3_SDO_OUT_SEL] = REG_FIELD(CV1800B_I2S_TDM_SDO_OUT_SEL, 12, 14),
+	[F_AIAO_AUDIO_PDM_SEL_I2S1] = REG_FIELD(CV1800B_AUDIO_PDM_CTRL, 1, 1),
 };
 
-enum tdm_fields {
+enum cv1800b_tdm_fields {
 	F_TX_MODE,
 	F_MASTER_MODE,
 	F_DMA_MODE,
@@ -141,45 +142,45 @@ enum tdm_fields {
 	F_TX_SOURCE_LEFT_ALIGN,
 	F_AUTO_DISABLE_WITH_CH_EN,
 	/* End of register map */
-	F_MAX_FIELDS,
+	CV1800B_TDM_MAX_FIELDS,
 };
 
-static const struct reg_field sg2002_tdm_fields[] = {
-	[F_TX_MODE] = REG_FIELD(I2S_BLK_MODE_SETTING, 0, 0),
-	[F_MASTER_MODE] = REG_FIELD(I2S_BLK_MODE_SETTING, 1, 1),
-	[F_DMA_MODE] = REG_FIELD(I2S_BLK_MODE_SETTING, 7, 7),
-	[F_MCLK_DIV] = REG_FIELD(I2S_CLK_CTRL1, 0, 15),
-	[F_BCLK_DIV] = REG_FIELD(I2S_CLK_CTRL1, 16, 31),
-	[F_AUD_CLK_SEL] = REG_FIELD(I2S_CLK_CTRL0, 0, 0),
-	[F_BCLK_OUT_CLK_FORCE_EN] = REG_FIELD(I2S_CLK_CTRL0, 6, 6),
-	[F_MCLK_OUT_EN] = REG_FIELD(I2S_CLK_CTRL0, 7, 7),
-	[F_AUD_EN] = REG_FIELD(I2S_CLK_CTRL0, 8, 8),
-	[F_I2S_RESET_RX] = REG_FIELD(I2S_I2S_RESET, 0, 0),
-	[F_I2S_RESET_TX] = REG_FIELD(I2S_I2S_RESET, 1, 1),
-	[F_RX_FIFO_RESET] = REG_FIELD(I2S_FIFO_RESET, 0, 0),
-	[F_TX_FIFO_RESET] = REG_FIELD(I2S_FIFO_RESET, 16, 16),
-	[F_I2S_ENABLE] = REG_FIELD(I2S_I2S_ENABLE, 0, 0),
-	[F_RX_BLK_CLK_FORCE_EN] = REG_FIELD(I2S_BLK_CFG, 8, 8),
-	[F_RX_FIFO_DMA_CLK_FORCE_EN] = REG_FIELD(I2S_BLK_CFG, 9, 9),
-	[F_TX_BLK_CLK_FORCE_EN] = REG_FIELD(I2S_BLK_CFG, 16, 16),
-	[F_TX_FIFO_DMA_CLK_FORCE_EN] = REG_FIELD(I2S_BLK_CFG, 17, 17),
-	[F_FRAME_LENGTH] = REG_FIELD(I2S_FRAME_SETTING, 0, 8),
-	[F_FS_ACTIVE_LENGTH] = REG_FIELD(I2S_FRAME_SETTING, 16, 23),
-	[F_I2S_INT_EN] = REG_FIELD(I2S_I2S_INT_EN, 8, 8),
-	[F_SLOT_EN] = REG_FIELD(I2S_SLOT_SETTING2, 0, 15),
-	[F_I2S_LRCK_MASTER_ENABLE] = REG_FIELD(I2S_LRCK_MASTER, 0, 0),
-	[F_TX_SOURCE_LEFT_ALIGN] = REG_FIELD(I2S_DATA_FORMAT, 6, 6),
-	[F_AUTO_DISABLE_WITH_CH_EN] = REG_FIELD(I2S_BLK_CFG, 4, 4),
-	[F_WORD_LENGTH] = REG_FIELD(I2S_DATA_FORMAT, 1, 2),
-	[F_RX_FIFO_THRESHOLD] = REG_FIELD(I2S_FIFO_THRESHOLD, 0, 4),
-	[F_TX_FIFO_THRESHOLD] = REG_FIELD(I2S_FIFO_THRESHOLD, 16, 20),
-	[F_TX_FIFO_HIGH_THRESHOLD] = REG_FIELD(I2S_FIFO_THRESHOLD, 24, 28),
-	[F_SLOT_NUM] = REG_FIELD(I2S_SLOT_SETTING1, 0, 3),
-	[F_SLOT_SIZE] = REG_FIELD(I2S_SLOT_SETTING1, 8, 13),
-	[F_DATA_SIZE] = REG_FIELD(I2S_SLOT_SETTING1, 16, 20),
-	[F_FB_OFFSET] = REG_FIELD(I2S_SLOT_SETTING1, 24, 28),
+static const struct reg_field cv1800b_tdm_reg_fields[] = {
+	[F_TX_MODE] = REG_FIELD(CV1800B_BLK_MODE_SETTING, 0, 0),
+	[F_MASTER_MODE] = REG_FIELD(CV1800B_BLK_MODE_SETTING, 1, 1),
+	[F_DMA_MODE] = REG_FIELD(CV1800B_BLK_MODE_SETTING, 7, 7),
+	[F_MCLK_DIV] = REG_FIELD(CV1800B_CLK_CTRL1, 0, 15),
+	[F_BCLK_DIV] = REG_FIELD(CV1800B_CLK_CTRL1, 16, 31),
+	[F_AUD_CLK_SEL] = REG_FIELD(CV1800B_CLK_CTRL0, 0, 0),
+	[F_BCLK_OUT_CLK_FORCE_EN] = REG_FIELD(CV1800B_CLK_CTRL0, 6, 6),
+	[F_MCLK_OUT_EN] = REG_FIELD(CV1800B_CLK_CTRL0, 7, 7),
+	[F_AUD_EN] = REG_FIELD(CV1800B_CLK_CTRL0, 8, 8),
+	[F_I2S_RESET_RX] = REG_FIELD(CV1800B_I2S_RESET, 0, 0),
+	[F_I2S_RESET_TX] = REG_FIELD(CV1800B_I2S_RESET, 1, 1),
+	[F_RX_FIFO_RESET] = REG_FIELD(CV1800B_FIFO_RESET, 0, 0),
+	[F_TX_FIFO_RESET] = REG_FIELD(CV1800B_FIFO_RESET, 16, 16),
+	[F_I2S_ENABLE] = REG_FIELD(CV1800B_I2S_ENABLE, 0, 0),
+	[F_RX_BLK_CLK_FORCE_EN] = REG_FIELD(CV1800B_BLK_CFG, 8, 8),
+	[F_RX_FIFO_DMA_CLK_FORCE_EN] = REG_FIELD(CV1800B_BLK_CFG, 9, 9),
+	[F_TX_BLK_CLK_FORCE_EN] = REG_FIELD(CV1800B_BLK_CFG, 16, 16),
+	[F_TX_FIFO_DMA_CLK_FORCE_EN] = REG_FIELD(CV1800B_BLK_CFG, 17, 17),
+	[F_FRAME_LENGTH] = REG_FIELD(CV1800B_FRAME_SETTING, 0, 8),
+	[F_FS_ACTIVE_LENGTH] = REG_FIELD(CV1800B_FRAME_SETTING, 16, 23),
+	[F_I2S_INT_EN] = REG_FIELD(CV1800B_I2S_INT_EN, 8, 8),
+	[F_SLOT_EN] = REG_FIELD(CV1800B_SLOT_SETTING2, 0, 15),
+	[F_I2S_LRCK_MASTER_ENABLE] = REG_FIELD(CV1800B_LRCK_MASTER, 0, 0),
+	[F_TX_SOURCE_LEFT_ALIGN] = REG_FIELD(CV1800B_DATA_FORMAT, 6, 6),
+	[F_AUTO_DISABLE_WITH_CH_EN] = REG_FIELD(CV1800B_BLK_CFG, 4, 4),
+	[F_WORD_LENGTH] = REG_FIELD(CV1800B_DATA_FORMAT, 1, 2),
+	[F_RX_FIFO_THRESHOLD] = REG_FIELD(CV1800B_FIFO_THRESHOLD, 0, 4),
+	[F_TX_FIFO_THRESHOLD] = REG_FIELD(CV1800B_FIFO_THRESHOLD, 16, 20),
+	[F_TX_FIFO_HIGH_THRESHOLD] = REG_FIELD(CV1800B_FIFO_THRESHOLD, 24, 28),
+	[F_SLOT_NUM] = REG_FIELD(CV1800B_SLOT_SETTING1, 0, 3),
+	[F_SLOT_SIZE] = REG_FIELD(CV1800B_SLOT_SETTING1, 8, 13),
+	[F_DATA_SIZE] = REG_FIELD(CV1800B_SLOT_SETTING1, 16, 20),
+	[F_FB_OFFSET] = REG_FIELD(CV1800B_SLOT_SETTING1, 24, 28),
 };
-struct sg2002_i2s {
+struct cv1800b_i2s {
 	struct regmap *aiao;
 	struct regmap *regs;
 	u32 tdm_id;
@@ -189,65 +190,65 @@ struct sg2002_i2s {
 	struct snd_dmaengine_dai_dma_data playback_dma;
 	struct snd_dmaengine_dai_dma_data capture_dma;
 	phys_addr_t phys_base;
-	struct regmap_field *fields[F_MAX_FIELDS];
-	struct regmap_field *aiao_fields[F_AIAO_MAX_FIELDS];
-	enum sg_i2s_capability cap;
+	struct regmap_field *fields[CV1800B_TDM_MAX_FIELDS];
+	struct regmap_field *aiao_fields[CV1800B_AIAO_MAX_FIELDS];
+	enum cv1800b_i2s_capability cap;
 	bool only_clock_mode;
 };
 
-static int sg2002_regmap_init(struct sg2002_i2s *i2s)
+static int cv1800b_regmap_init(struct cv1800b_i2s *i2s)
 {
 	struct regmap_field **fields = i2s->fields;
 	int i;
 
-	for (i = 0; i < F_MAX_FIELDS; i++) {
+	for (i = 0; i < CV1800B_TDM_MAX_FIELDS; i++) {
 		fields[i] = devm_regmap_field_alloc(i2s->dev, i2s->regs,
-						    sg2002_tdm_fields[i]);
+						    cv1800b_tdm_reg_fields[i]);
 		if (IS_ERR(i2s->fields[i]))
 			return dev_err_probe(i2s->dev, PTR_ERR(i2s->fields[i]),
 					     "can't alloc field[%d]\n", i);
 	}
 	return 0;
-};
-static int sg2002_aiao_regmap(struct sg2002_i2s *i2s)
+}
+static int cv1800b_aiao_regmap_init(struct cv1800b_i2s *i2s)
 {
 	struct regmap_field **fields = i2s->aiao_fields;
 	int i;
 
-	for (i = 0; i < F_AIAO_MAX_FIELDS; i++) {
+	for (i = 0; i < CV1800B_AIAO_MAX_FIELDS; i++) {
 		fields[i] = devm_regmap_field_alloc(i2s->dev, i2s->aiao,
-						    aiao_fields[i]);
+						    cv1800b_aiao_reg_fields[i]);
 		if (IS_ERR(fields[i]))
 			return dev_err_probe(i2s->dev, PTR_ERR(fields[i]),
 					     "can't alloc field[%d]\n", i);
 	}
 	return 0;
 }
-static int sg2002_setup_dma_struct(struct sg2002_i2s *i2s, struct resource *res)
+static int cv1800b_setup_dma_struct(struct cv1800b_i2s *i2s, struct resource *res)
 {
 	i2s->phys_base = res->start;
 
-	i2s->playback_dma.addr = i2s->phys_base + I2S_TX_WR_PORT;
+	i2s->playback_dma.addr = i2s->phys_base + CV1800B_TX_WR_PORT;
 	i2s->playback_dma.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 	i2s->playback_dma.fifo_size = 1024;
 	i2s->playback_dma.maxburst = 8;
 
-	i2s->capture_dma.addr = i2s->phys_base + I2S_RX_RD_PORT;
+	i2s->capture_dma.addr = i2s->phys_base + CV1800B_RX_RD_PORT;
 	i2s->capture_dma.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 	i2s->capture_dma.fifo_size = 1024;
 	i2s->capture_dma.maxburst = 8;
 	return 0;
 }
 
-static const struct snd_dmaengine_pcm_config sg_i2s_pcm_config = {
+static const struct snd_dmaengine_pcm_config cv1800b_i2s_pcm_config = {
 	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
 };
 
-static int sg_i2s_hw_params(struct snd_pcm_substream *substream,
+static int cv1800b_i2s_hw_params(struct snd_pcm_substream *substream,
 			    struct snd_pcm_hw_params *params,
 			    struct snd_soc_dai *dai)
 {
-	struct sg2002_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 
 	regmap_field_write(i2s->fields[F_SLOT_SIZE], 32);
 	regmap_field_write(i2s->fields[F_DATA_SIZE], 24);
@@ -260,33 +261,33 @@ static int sg_i2s_hw_params(struct snd_pcm_substream *substream,
 		regmap_field_write(i2s->fields[F_TX_MODE], 0);
 	return 0;
 }
-static void sg_reset_fifo(struct sg2002_i2s *i2s)
+static void cv1800b_reset_fifo(struct cv1800b_i2s *i2s)
 {
 	regmap_field_write(i2s->fields[F_RX_FIFO_RESET], 1);
 	regmap_field_write(i2s->fields[F_TX_FIFO_RESET], 1);
 	udelay(10);
 	regmap_field_write(i2s->fields[F_RX_FIFO_RESET], 0);
 	regmap_field_write(i2s->fields[F_TX_FIFO_RESET], 0);
-};
-static void sg_reset_i2s(struct sg2002_i2s *i2s)
+}
+static void cv1800b_reset_i2s(struct cv1800b_i2s *i2s)
 {
 	regmap_field_write(i2s->fields[F_I2S_RESET_RX], 1);
 	regmap_field_write(i2s->fields[F_I2S_RESET_TX], 1);
 	udelay(10);
 	regmap_field_write(i2s->fields[F_I2S_RESET_RX], 0);
 	regmap_field_write(i2s->fields[F_I2S_RESET_TX], 0);
-};
-static int sg_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
+}
+static int cv1800b_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
 			  struct snd_soc_dai *dai)
 {
-	struct sg2002_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		sg_reset_fifo(i2s);
-		sg_reset_i2s(i2s);
+		cv1800b_reset_fifo(i2s);
+		cv1800b_reset_i2s(i2s);
 		regmap_field_write(i2s->fields[F_I2S_ENABLE], 1);
 		break;
 
@@ -294,8 +295,8 @@ static int sg_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		regmap_field_write(i2s->fields[F_I2S_ENABLE], 0);
-		sg_reset_fifo(i2s);
-		sg_reset_i2s(i2s);
+		cv1800b_reset_fifo(i2s);
+		cv1800b_reset_i2s(i2s);
 		break;
 	default:
 		return -EINVAL;
@@ -303,10 +304,10 @@ static int sg_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
 	return 0;
 }
 
-static int sg_i2s_startup(struct snd_pcm_substream *substream,
+static int cv1800b_i2s_startup(struct snd_pcm_substream *substream,
 			  struct snd_soc_dai *dai)
 {
-	struct sg2002_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 
 	pr_info("%s: dai=%s substream=%d i2s=%p\n", __func__, dai->name,
 		substream->stream, i2s);
@@ -317,15 +318,15 @@ static int sg_i2s_startup(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int sg_i2s_component_probe(struct snd_soc_component *component)
+static int cv1800b_i2s_component_probe(struct snd_soc_component *component)
 {
 	dev_info(component->dev, "I2S component probe\n");
 	return 0;
 }
 
-static int sg_i2s_dai_probe(struct snd_soc_dai *dai)
+static int cv1800b_i2s_dai_probe(struct snd_soc_dai *dai)
 {
-	struct sg2002_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 
 	if (!i2s) {
 		dev_err(dai->dev, "no drvdata in DAI probe\n");
@@ -337,15 +338,15 @@ static int sg_i2s_dai_probe(struct snd_soc_dai *dai)
 	return 0;
 }
 
-static const struct snd_soc_dai_ops sg_i2s_dai_ops = {
-	.probe = sg_i2s_dai_probe,
-	.startup = sg_i2s_startup,
-	.hw_params = sg_i2s_hw_params,
-	.trigger = sg_i2s_trigger,
+static const struct snd_soc_dai_ops cv1800b_i2s_dai_ops = {
+	.probe = cv1800b_i2s_dai_probe,
+	.startup = cv1800b_i2s_startup,
+	.hw_params = cv1800b_i2s_hw_params,
+	.trigger = cv1800b_i2s_trigger,
 };
 
-static struct snd_soc_dai_driver sg_i2s_dai_template = {
-	.name = "sg2002-i2s",
+static struct snd_soc_dai_driver cv1800b_i2s_dai_template = {
+	.name = "cv1800b-i2s",
 	.playback = {
 		.stream_name = "Playback",
 		.channels_min = 2,
@@ -361,16 +362,16 @@ static struct snd_soc_dai_driver sg_i2s_dai_template = {
 		.formats = SNDRV_PCM_FMTBIT_S24_LE,
 	},
 
-	.ops = &sg_i2s_dai_ops,
+	.ops = &cv1800b_i2s_dai_ops,
 };
-static const struct snd_soc_component_driver sg_i2s_component = {
-	.name = "sg2002-i2s",
-	.probe = sg_i2s_component_probe,
+static const struct snd_soc_component_driver cv1800b_i2s_component = {
+	.name = "cv1800b-i2s",
+	.probe = cv1800b_i2s_component_probe,
 };
 
-static void sg2002_i2s_hw_disable(struct sg2002_i2s *i2s)
+static void cv1800b_i2s_hw_disable(struct cv1800b_i2s *i2s)
 {
-	if (!i2s->regs) // todo check if it is correct
+	if (!i2s->regs) 
 		return;
 
 	regmap_field_write(i2s->fields[F_I2S_ENABLE], 0);
@@ -383,11 +384,11 @@ static void sg2002_i2s_hw_disable(struct sg2002_i2s *i2s)
 	regmap_field_write(i2s->fields[F_TX_FIFO_RESET], 1);
 }
 
-static void setup_aiao(struct sg2002_i2s *i2s)
+static void cv1800b_i2s_setup_aiao_mux(struct cv1800b_i2s *i2s)
 {
-	regmap_field_write(i2s->aiao_fields[F_AUDIO_PDM_SEL_I2S1], 0);
-};
-static void setup_tdm(struct sg2002_i2s *i2s)
+	regmap_field_write(i2s->aiao_fields[F_AIAO_AUDIO_PDM_SEL_I2S1], 0);
+}
+static void cv1800b_i2s_setup_tdm(struct cv1800b_i2s *i2s)
 {
 	bool is_master_mode =
 		of_property_read_bool(i2s->dev->of_node, "sg,tdm-master");
@@ -411,8 +412,8 @@ static void setup_tdm(struct sg2002_i2s *i2s)
 	if (i2s->only_clock_mode)
 		regmap_field_write(i2s->fields[F_I2S_LRCK_MASTER_ENABLE], 1);
 
-};
-static void sg2002_i2s_mux_setup(struct sg2002_i2s *i2s)
+}
+static void cv1800b_i2s_mux_setup(struct cv1800b_i2s *i2s)
 {
 	u32 sdi_in;
 	u32 sdo_out;
@@ -431,22 +432,22 @@ static void sg2002_i2s_mux_setup(struct sg2002_i2s *i2s)
 			switch (i2s->tdm_id) {
 			case 0:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_0_FS_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_0_FS_IN_SEL],
 					fs_in);
 				break;
 			case 1:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_1_FS_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_1_FS_IN_SEL],
 					fs_in);
 				break;
 			case 2:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_2_FS_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_2_FS_IN_SEL],
 					fs_in);
 				break;
 			case 3:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_3_FS_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_3_FS_IN_SEL],
 					fs_in);
 				break;
 			}
@@ -463,22 +464,22 @@ static void sg2002_i2s_mux_setup(struct sg2002_i2s *i2s)
 			switch (i2s->tdm_id) {
 			case 0:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_0_SCLK_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_0_SCLK_IN_SEL],
 					sclk_in);
 				break;
 			case 1:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_1_SCLK_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_1_SCLK_IN_SEL],
 					sclk_in);
 				break;
 			case 2:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_2_SCLK_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_2_SCLK_IN_SEL],
 					sclk_in);
 				break;
 			case 3:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_3_SCLK_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_3_SCLK_IN_SEL],
 					sclk_in);
 				break;
 			}
@@ -495,22 +496,22 @@ static void sg2002_i2s_mux_setup(struct sg2002_i2s *i2s)
 			switch (i2s->tdm_id) {
 			case 0:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_0_SDI_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_0_SDI_IN_SEL],
 					sdi_in);
 				break;
 			case 1:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_1_SDI_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_1_SDI_IN_SEL],
 					sdi_in);
 				break;
 			case 2:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_2_SDI_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_2_SDI_IN_SEL],
 					sdi_in);
 				break;
 			case 3:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_3_SDI_IN_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_3_SDI_IN_SEL],
 					sdi_in);
 				break;
 			}
@@ -532,17 +533,17 @@ static void sg2002_i2s_mux_setup(struct sg2002_i2s *i2s)
 				break;
 			case 1:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_1_SDO_OUT_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_1_SDO_OUT_SEL],
 					sdo_out);
 				break;
 			case 2:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_2_SDO_OUT_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_2_SDO_OUT_SEL],
 					sdo_out);
 				break;
 			case 3:
 				regmap_field_write(
-					i2s->aiao_fields[F_I2S_TDM_3_SDO_OUT_SEL],
+					i2s->aiao_fields[F_AIAO_I2S_TDM_3_SDO_OUT_SEL],
 					sdo_out);
 				break;
 			}
@@ -554,32 +555,32 @@ static void sg2002_i2s_mux_setup(struct sg2002_i2s *i2s)
 		}
 	}
 }
-static void sg2002_i2s_set_cap(struct sg2002_i2s *i2s)
+static void cv1800b_i2s_set_cap(struct cv1800b_i2s *i2s)
 {
 	const char *cap;
 
 	if (!of_property_read_string(i2s->dev->of_node, "capability", &cap)) {
 		if (!strcmp(cap, "rx"))
-			i2s->cap = SG_I2S_CAP_RX;
+			i2s->cap = CV1800B_I2S_CAP_RX;
 
 		else if (!strcmp(cap, "tx"))
-			i2s->cap = SG_I2S_CAP_TX;
+			i2s->cap = CV1800B_I2S_CAP_TX;
 
 		else if (!strcmp(cap, "txrx"))
-			i2s->cap = SG_I2S_CAP_TXRX;
+			i2s->cap = CV1800B_I2S_CAP_TXRX;
 
 		else
 			dev_warn(i2s->dev,
 				 "unknown capability '%s', using txrx\n", cap);
 	} else {
 		dev_info(i2s->dev, "capability missing, default = txrx\n");
-		i2s->cap = SG_I2S_CAP_TXRX;
+		i2s->cap = CV1800B_I2S_CAP_TXRX;
 	}
 }
-static int sg2002_i2s_probe(struct platform_device *pdev)
+static int cv1800b_i2s_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	struct sg2002_i2s *i2s;
+	struct cv1800b_i2s *i2s;
 	struct device_node *np = dev->of_node;
 	struct resource *res;
 	void __iomem *regs;
@@ -596,7 +597,7 @@ static int sg2002_i2s_probe(struct platform_device *pdev)
 		return PTR_ERR(regs);
 	i2s->dev = &pdev->dev;
 
-	i2s->regs = devm_regmap_init_mmio(dev, regs, &aiao_regmap_cfg);
+	i2s->regs = devm_regmap_init_mmio(dev, regs, &cv1800b_regmap_config);
 	if (IS_ERR(i2s->regs))
 		return dev_err_probe(dev, PTR_ERR(i2s->regs), "regmap init\n");
 
@@ -606,16 +607,16 @@ static int sg2002_i2s_probe(struct platform_device *pdev)
 				     "regmap aiao init\n");
 	}
 
-	sg2002_i2s_set_cap(i2s);
+	cv1800b_i2s_set_cap(i2s);
 
-	ret = sg2002_regmap_init(i2s);
+	ret = cv1800b_regmap_init(i2s);
 	if (ret)
 		return ret;
-	ret = sg2002_aiao_regmap(i2s);
+	ret = cv1800b_aiao_regmap_init(i2s);
 	if (ret)
 		return ret;
 
-	sg2002_setup_dma_struct(i2s, res);
+	cv1800b_setup_dma_struct(i2s, res);
 
 	ret = of_property_read_u32(np, "aiao,tdm-id", &i2s->tdm_id);
 	if (ret) {
@@ -646,9 +647,9 @@ static int sg2002_i2s_probe(struct platform_device *pdev)
 		of_property_read_bool(i2s->dev->of_node, "sg,only-clock");
 
 	platform_set_drvdata(pdev, i2s);
-	setup_tdm(i2s);
-	setup_aiao(i2s);
-	sg2002_i2s_mux_setup(i2s);
+	cv1800b_i2s_setup_tdm(i2s);
+	cv1800b_i2s_setup_aiao_mux(i2s);
+	cv1800b_i2s_mux_setup(i2s);
 	if (i2s->only_clock_mode) {
 		dev_info(dev,
 			 "tdm-id %d is set to only clock generation mode\n",
@@ -656,37 +657,37 @@ static int sg2002_i2s_probe(struct platform_device *pdev)
 		return 0;
 	}
 
-	dai = devm_kmemdup(dev, &sg_i2s_dai_template, sizeof(*dai), GFP_KERNEL);
+	dai = devm_kmemdup(dev, &cv1800b_i2s_dai_template, sizeof(*dai), GFP_KERNEL);
 	if (!dai)
 		return -ENOMEM;
-	if (i2s->cap == SG_I2S_CAP_RX)
+	if (i2s->cap == CV1800B_I2S_CAP_RX)
 		memset(&dai->playback, 0, sizeof(dai->playback));
-	else if (i2s->cap == SG_I2S_CAP_TX)
+	else if (i2s->cap == CV1800B_I2S_CAP_TX)
 		memset(&dai->capture, 0, sizeof(dai->capture));
 
 
-	ret = devm_snd_soc_register_component(dev, &sg_i2s_component, dai, 1);
+	ret = devm_snd_soc_register_component(dev, &cv1800b_i2s_component, dai, 1);
 	if (ret)
 		return ret;
 
-	ret = devm_snd_dmaengine_pcm_register(dev, &sg_i2s_pcm_config, 0);
+	ret = devm_snd_dmaengine_pcm_register(dev, &cv1800b_i2s_pcm_config, 0);
 	if (ret) {
 		dev_err(dev, "dmaengine_pcm_register failed: %d\n", ret);
 		return ret;
 	}
 
-	dev_info(dev, "SG2002 I2S probed: tdm-id=%u,\n", i2s->tdm_id);
+	dev_info(dev, "cv1800b I2S probed: tdm-id=%u,\n", i2s->tdm_id);
 	return 0;
 }
 
-static void sg2002_i2s_remove(struct platform_device *pdev)
+static void cv1800b_i2s_remove(struct platform_device *pdev)
 {
-	struct sg2002_i2s *i2s = platform_get_drvdata(pdev);
+	struct cv1800b_i2s *i2s = platform_get_drvdata(pdev);
 
 	if (!i2s)
 		return;
 
-	sg2002_i2s_hw_disable(i2s);
+	cv1800b_i2s_hw_disable(i2s);
 
 	if (i2s->clk_mclk)
 		clk_disable_unprepare(i2s->clk_mclk);
@@ -694,24 +695,24 @@ static void sg2002_i2s_remove(struct platform_device *pdev)
 		clk_disable_unprepare(i2s->clk);
 }
 
-static const struct of_device_id sg2002_i2s_of_match[] = {
+static const struct of_device_id cv1800b_i2s_of_match[] = {
 	{
 		.compatible = "cvitek,cv1800b-i2s",
 	},
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, sg2002_i2s_of_match);
+MODULE_DEVICE_TABLE(of, cv1800b_i2s_of_match);
 
-static struct platform_driver sg2002_i2s_driver = {
-	.probe = sg2002_i2s_probe,
-	.remove = sg2002_i2s_remove,
+static struct platform_driver cv1800b_i2s_driver = {
+	.probe = cv1800b_i2s_probe,
+	.remove = cv1800b_i2s_remove,
 	.driver = {
-	    .name = "sg2002-i2s",
-	    .of_match_table = sg2002_i2s_of_match,
+	    .name = "cv1800b-i2s",
+	    .of_match_table = cv1800b_i2s_of_match,
 	},
 };
-module_platform_driver(sg2002_i2s_driver);
+module_platform_driver(cv1800b_i2s_driver);
 
-MODULE_DESCRIPTION("Sophgo SG2002 I2S/TDM driver");
+MODULE_DESCRIPTION("Sophgo cv1800b I2S/TDM driver");
 MODULE_AUTHOR("Anton D. Stavinsky");
 MODULE_LICENSE("GPL");
