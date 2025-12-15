@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/mux/sophgo,cv1800b-aiao-mux.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Sophgo CV1800B/SG2002 AIAO audio mux controller
+
+maintainers:
+  - Anton D. Stavinskii <stavinsky@gmail.com>
+
+description: |
+  Audio routing mux inside the AIAO block on Sophgo SG2002/CV1800B.
+
+allOf:
+  - $ref: mux-controller.yaml#
+
+properties:
+  compatible:
+    enum:
+      - sophgo,cv1800b-aiao-mux
+  reg:
+    maxItems: 1
+  "#mux-state-cells":
+    const: 2
+
+required:
+  - compatible
+  - reg
+  - "#mux-state-cells"
+
+additionalProperties: false
+
+examples:
+  - |
+    aiao_mux: mux-controller@4108000 {
+      compatible = "sophgo,cv1800b-aiao-mux";
+      reg = <0x04108000 0x1000>;
+      #mux-state-cells = <2>;
+    };
