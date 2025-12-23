@@ -1,0 +1,196 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2024 Thomas Bonnefille <thomas.bonnefille@bootlin.com>
+ */
+
+/dts-v1/;
+
+#include "sg2002.dtsi"
+
+/ {
+	model = "Milk-V duo 256M";
+	compatible = "sipeed,licheerv-nano-b",
+				 "sipeed,licheerv-nano",
+				 "sophgo,sg2002";
+
+	aliases {
+		gpio0 = &gpio0;
+		gpio1 = &gpio1;
+		gpio2 = &gpio2;
+		gpio3 = &gpio3;
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		serial4 = &uart4;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+};
+
+&osc {
+	clock-frequency = <25000000>;
+};
+
+&pinctrl {
+	uart0_cfg: uart0-cfg {
+		uart0-pins {
+			pinmux = <PINMUX(PIN_UART0_TX, 0)>,
+					 <PINMUX(PIN_UART0_RX, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+	};
+
+	sdhci0_cfg: sdhci0-cfg {
+		sdhci0-clk-pins {
+			pinmux = <PINMUX(PIN_SD0_CLK, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <16100>;
+			power-source = <3300>;
+		};
+
+		sdhci0-cmd-pins {
+			pinmux = <PINMUX(PIN_SD0_CMD, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+
+		sdhci0-data-pins {
+			pinmux = <PINMUX(PIN_SD0_D0, 0)>,
+					 <PINMUX(PIN_SD0_D1, 0)>,
+					 <PINMUX(PIN_SD0_D2, 0)>,
+					 <PINMUX(PIN_SD0_D3, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+
+		sdhci0-cd-pins {
+			pinmux = <PINMUX(PIN_SD0_CD, 0)>;
+			bias-pull-up;
+			drive-strength-microamp = <10800>;
+			power-source = <3300>;
+		};
+	};
+};
+
+&sdhci0 {
+	pinctrl-0 = <&sdhci0_cfg>;
+	pinctrl-names = "default";
+	status = "okay";
+	bus-width = <4>;
+	no-1-8-v;
+	no-mmc;
+	no-sdio;
+	disable-wp;
+};
+
+&usb {
+	dr_mode = "peripheral";
+	status = "okay";
+	g-rx-fifo-size = <1536>;
+	g-tx-fifo-size = <128 128 64 64 64 64 32 32>;
+};
+
+&uart0 {
+	pinctrl-0 = <&uart0_cfg>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&dmac {
+	status = "okay";
+};
+
+&dmamux {
+	status = "okay";
+};
+
+&pinctrl {
+	i2s2_cfg: i2s2-cfg {
+		i2s2-out-pins {
+			pinmux = <PINMUX(PIN_ETH_TXM, 7)>,
+					 <PINMUX(PIN_ETH_RXP,  7)>,
+					 <PINMUX(PIN_ETH_RXM,  7)>;
+
+			drive-strength-microamp = <15700>;
+			power-source = <1800>;
+		};
+		i2s2-in-pins {
+			pinmux = <PINMUX(PIN_ETH_TXP, 7)>;
+			power-source = <1800>;
+		};
+	};
+};
+
+/ {
+	ephy-init {/// delete me!!!!
+		compatible = "sophgo,sg2002-ephy";
+	};
+
+};
+
+&i2s2 {
+	pinctrl-0 = <&i2s2_cfg>;
+	pinctrl-names = "default";
+	status = "okay";
+	#sound-dai-cells = <0>;
+	mux-states = <&aiao CV1800B_AIAO_SDO(2) 5>, <&aiao CV1800B_AIAO_FS(2) 2>;
+	mux-state-names = "sdo-out", "fs-in";
+};
+
+/ {
+	codec0: my-adc {
+		compatible = "invensense,ics43432";
+		#sound-dai-cells = <0>;
+
+	};
+	codec1: my-dac {
+		compatible = "maxim,max98360a";
+		#sound-dai-cells = <0>;
+	};
+	codec2: dummy-codec {
+		#sound-dai-cells = <0>;
+	};
+
+	sound_card {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "sg2002-i2s";
+		simple-audio-card,format = "i2s";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		simple-audio-card,dai-link@0 {
+			frame-master = <&clk_master>;
+			bitclock-master = <&clk_master>;
+			reg = <0>;
+			format = "i2s";
+
+			clk_master: cpu {
+				sound-dai = <&i2s2>;
+			};
+
+			codec {
+				sound-dai = <&codec1>;
+			};
+		};
+
+		simple-audio-card,dai-link@1 {
+			frame-master = <&clk_master1>;
+			bitclock-master = <&clk_master1>;
+			reg = <1>;
+			format = "i2s";
+			clk_master1: cpu {
+				sound-dai = <&i2s2>;
+			};
+			codec {
+				sound-dai = <&codec0>;
+			};
+		};
+	};
+};
