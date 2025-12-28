@@ -5,7 +5,6 @@ config SND_SOC_CV1800B_TDM
 	tristate "Sophgo CV1800B I2S/TDM support"
 	depends on SND_SOC && OF
 	select SND_SOC_GENERIC_DMAENGINE_PCM
-	select MULTIPLEXER
 	help
 	  This option enables the I2S/TDM audio controller found in Sophgo
 	  CV1800B / SG2002 SoCs. The controller supports standard I2S
@@ -17,5 +16,28 @@ config SND_SOC_CV1800B_TDM
 
 	  To compile the driver as a module, choose M here: the module will
 	  be called cv1800b_tdm.
+
+config SND_SOC_CV1800B_SOUND_CARD
+	tristate "Sophgo CV1800B sound card"
+	depends on SND_SOC && OF
+	help
+	  Basic ASoC machine driver for Sophgo CV1800B SoCs.
+
+	  This driver provides a simple sound card glue layer that connects
+	  CV1800B I2S/TDM controllers to codecs described in Device Tree.
+	  Only the I2S audio format is supported.
+
+	  To compile the driver as a module, choose M here:
+	  The module will be called cv1800b_sound_card.
+
+config SND_SOC_CV1800B_ADC_CODEC
+	tristate "Sophgo CV1800B/SG2002 internal ADC codec"
+	depends on SND_SOC
+	help
+	  Say Y or M to build support for the Sophgo CV1800B
+	  internal analog ADC codec block (RXADC).
+
+	  This driver provides an ASoC codec DAI for capture and basic
+	  control of the RXADC registers.
 
 endmenu

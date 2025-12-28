@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (GPL-2.0 OR MIT)
 /*
- * Copyright (C) 2024 Thomas Bonnefille <thomas.bonnefille@bootlin.com>
- */
+* Copyright (C) 2024 Thomas Bonnefille <thomas.bonnefille@bootlin.com>
+*/
 
 /dts-v1/;
 
@@ -10,8 +10,8 @@
 / {
 	model = "Milk-V duo 256M";
 	compatible = "sipeed,licheerv-nano-b",
-				 "sipeed,licheerv-nano",
-				 "sophgo,sg2002";
+	"sipeed,licheerv-nano",
+	"sophgo,sg2002";
 
 	aliases {
 		gpio0 = &gpio0;
@@ -26,7 +26,7 @@
 	};
 
 	chosen {
-		stdout-path = "serial0:115200n8";
+		stdout-path = "serial0: 115200n8";
 	};
 };
 
@@ -38,7 +38,7 @@
 	uart0_cfg: uart0-cfg {
 		uart0-pins {
 			pinmux = <PINMUX(PIN_UART0_TX, 0)>,
-					 <PINMUX(PIN_UART0_RX, 0)>;
+			<PINMUX(PIN_UART0_RX, 0)>;
 			bias-pull-up;
 			drive-strength-microamp = <10800>;
 			power-source = <3300>;
@@ -62,9 +62,9 @@
 
 		sdhci0-data-pins {
 			pinmux = <PINMUX(PIN_SD0_D0, 0)>,
-					 <PINMUX(PIN_SD0_D1, 0)>,
-					 <PINMUX(PIN_SD0_D2, 0)>,
-					 <PINMUX(PIN_SD0_D3, 0)>;
+			<PINMUX(PIN_SD0_D1, 0)>,
+			<PINMUX(PIN_SD0_D2, 0)>,
+			<PINMUX(PIN_SD0_D3, 0)>;
 			bias-pull-up;
 			drive-strength-microamp = <10800>;
 			power-source = <3300>;
@@ -115,8 +115,8 @@
 	i2s2_cfg: i2s2-cfg {
 		i2s2-out-pins {
 			pinmux = <PINMUX(PIN_ETH_TXM, 7)>,
-					 <PINMUX(PIN_ETH_RXP,  7)>,
-					 <PINMUX(PIN_ETH_RXM,  7)>;
+			<PINMUX(PIN_ETH_RXP,  7)>,
+			<PINMUX(PIN_ETH_RXM,  7)>;
 
 			drive-strength-microamp = <15700>;
 			power-source = <1800>;
@@ -138,59 +138,86 @@
 &i2s2 {
 	pinctrl-0 = <&i2s2_cfg>;
 	pinctrl-names = "default";
-	status = "okay";
 	#sound-dai-cells = <0>;
-	mux-states = <&aiao CV1800B_AIAO_SDO(2) 5>, <&aiao CV1800B_AIAO_FS(2) 2>;
-	mux-state-names = "sdo-out", "fs-in";
+	sophgo,mclk_out;
+	status = "okay";
+};
+
+&i2s0 {
+	status = "okay";
+	sophgo,mclk_out;
+	#sound-dai-cells = <0>;
+};
+&i2s3 {
+	status = "okay";
+	sophgo,mclk_out;
+	#sound-dai-cells = <0>;
 };
 
 / {
-	codec0: my-adc {
+	int_adc: my-adc {
+		// compatible = "sophgo,cv1800b-adc-codec";
 		compatible = "invensense,ics43432";
+
 		#sound-dai-cells = <0>;
+		reg = <0x0300A100 0x100>;
 
 	};
-	codec1: my-dac {
+
+	ext_dac: my-dac {
 		compatible = "maxim,max98360a";
 		#sound-dai-cells = <0>;
 	};
-	codec2: dummy-codec {
+	ext_adc: my-ext-adc {
+		compatible = "invensense,ics43432";
 		#sound-dai-cells = <0>;
 	};
 
-	sound_card {
-		compatible = "simple-audio-card";
-		simple-audio-card,name = "sg2002-i2s";
-		simple-audio-card,format = "i2s";
-		#address-cells = <1>;
-		#size-cells = <0>;
+	sound {
+		compatible = "sophgo,cv1800b-aiao";
+		model = "cv1800b audio";
+		reg = <0x04108000 0x1000>;
+		link@1 {
+			dai-format = "i2s";
+			bitclock-master = <&clock_maser>;
+			frame-master = <&clock_maser>;
+			sophgo,sdo-out = <CV1800B_SND_CLK_MUX_INT_ADC>;
+			sophgo,sdi-in = <CV1800B_SND_CLK_MUX_INT_ADC>;
+			sophgo,fs-in = <CV1800B_SND_CLK_MUX_INT_ADC>;
+			sophgo,sclk-in = <CV1800B_SND_CLK_MUX_INT_ADC>;
+			link-name = "i2s1-int-adc";
 
-		simple-audio-card,dai-link@0 {
-			frame-master = <&clk_master>;
-			bitclock-master = <&clk_master>;
-			reg = <0>;
-			format = "i2s";
+			clock_maser: codec {
+				sound-dai = <&int_adc>;
 
-			clk_master: cpu {
-				sound-dai = <&i2s2>;
 			};
 
-			codec {
-				sound-dai = <&codec1>;
+			cpu {
+				sound-dai = <&i2s3>;
 			};
+
 		};
 
-		simple-audio-card,dai-link@1 {
-			frame-master = <&clk_master1>;
-			bitclock-master = <&clk_master1>;
-			reg = <1>;
-			format = "i2s";
-			clk_master1: cpu {
-				sound-dai = <&i2s2>;
-			};
+		link@2 {
+			dai-format = "i2s";
+			bitclock-master = <&clock_master_2>;
+			frame-master = <&clock_master_2>;
+			sophgo,sdo-out = <CV1800B_SND_CLK_MUX_I2S2>;
+			sophgo,sdi-in = <CV1800B_SND_CLK_MUX_I2S2>;
+			sophgo,fs-in = <CV1800B_SND_CLK_MUX_I2S2>;
+			sophgo,sclk-in = <CV1800B_SND_CLK_MUX_I2S2>;
+			link-name = "i2s2-ext-adc";
+
 			codec {
-				sound-dai = <&codec0>;
+				sound-dai = <&ext_adc>;
+
 			};
+
+			clock_master_2: cpu {
+				sound-dai = <&i2s2>;
+
+			};
+
 		};
 	};
 };

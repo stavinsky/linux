@@ -22,7 +22,7 @@
 #define ICS43432_RATE_MIN 7190 /* Hz, from data sheet */
 #define ICS43432_RATE_MAX 52800  /* Hz, from data sheet */
 
-#define ICS43432_FORMATS (SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32)
+#define ICS43432_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32)
 
 static struct snd_soc_dai_driver ics43432_dai = {
 	.name = "ics43432-hifi",

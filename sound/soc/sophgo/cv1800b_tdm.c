@@ -9,17 +9,20 @@
 #include <sound/dmaengine_pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <linux/mux/consumer.h>
 #include <linux/string.h>
 #include <linux/dev_printk.h>
 
 #include <linux/bitfield.h>
 #include <linux/bits.h>
+#include <linux/limits.h>
 
 #define TX_FIFO_SIZE (1024)
 #define RX_FIFO_SIZE (1024)
 #define TX_MAX_BURST (8)
 #define RX_MAX_BURST (8)
+
+#define CV1800B_DEF_FREQ 24576000
+#define CV1800B_DEF_MCLK_FS_RATIO 256
 
 /* tdm registers */
 #define CV1800B_BLK_MODE_SETTING  0x000
@@ -33,7 +36,7 @@
 #define CV1800B_I2S_INT_EN        0x020
 #define CV1800B_I2S_INT           0x024
 #define CV1800B_FIFO_THRESHOLD    0x028
-#define CV1800B_LRCK_MASTER       0x02C
+#define CV1800B_LRCK_MASTER       0x02C /* special clock only mode */
 #define CV1800B_FIFO_RESET        0x030
 #define CV1800B_RX_STATUS         0x040
 #define CV1800B_TX_STATUS         0x048
@@ -43,25 +46,20 @@
 #define CV1800B_RX_RD_PORT        0x080
 #define CV1800B_TX_WR_PORT        0x0C0
 
-#define CV1800B_MCLK_DIV              1
-#define CV1800B_BCLK_DIV             16
-#define CV1800B_MCLK_COEF          1024
-#define CV1800B_RATE              48000
-
 /* CV1800B_BLK_MODE_SETTING (0x000) */
-#define BLK_TX_MODE_MASK              BIT(0)
-#define BLK_MASTER_MODE_MASK          BIT(1)
-#define BLK_DMA_MODE_MASK             BIT(7)
+#define BLK_TX_MODE_MASK     BIT(0)
+#define BLK_MASTER_MODE_MASK BIT(1)
+#define BLK_DMA_MODE_MASK    BIT(7)
 
 /* CV1800B_CLK_CTRL1 (0x064) */
 #define CLK_MCLK_DIV_MASK GENMASK(15, 0)
 #define CLK_BCLK_DIV_MASK GENMASK(31, 16)
 
 /* CV1800B_CLK_CTRL0 (0x060) */
-#define CLK_AUD_CLK_SEL_MASK           BIT(0)
+#define CLK_AUD_CLK_SEL_MASK	       BIT(0)
 #define CLK_BCLK_OUT_CLK_FORCE_EN_MASK BIT(6)
-#define CLK_MCLK_OUT_EN_MASK           BIT(7)
-#define CLK_AUD_EN_MASK                BIT(8)
+#define CLK_MCLK_OUT_EN_MASK	       BIT(7)
+#define CLK_AUD_EN_MASK		       BIT(8)
 
 /* CV1800B_I2S_RESET (0x01C) */
 #define RST_I2S_RESET_RX_MASK BIT(0)
@@ -76,9 +74,9 @@
 
 /* CV1800B_BLK_CFG (0x014) */
 #define BLK_AUTO_DISABLE_WITH_CH_EN_MASK  BIT(4)
-#define BLK_RX_BLK_CLK_FORCE_EN_MASK      BIT(8)
+#define BLK_RX_BLK_CLK_FORCE_EN_MASK	  BIT(8)
 #define BLK_RX_FIFO_DMA_CLK_FORCE_EN_MASK BIT(9)
-#define BLK_TX_BLK_CLK_FORCE_EN_MASK      BIT(16)
+#define BLK_TX_BLK_CLK_FORCE_EN_MASK	  BIT(16)
 #define BLK_TX_FIFO_DMA_CLK_FORCE_EN_MASK BIT(17)
 
 /* CV1800B_FRAME_SETTING (0x004) */
@@ -95,12 +93,12 @@
 #define LRCK_MASTER_ENABLE_MASK BIT(0)
 
 /* CV1800B_DATA_FORMAT (0x010) */
-#define DF_WORD_LENGTH_MASK GENMASK(2, 1)
+#define DF_WORD_LENGTH_MASK	     GENMASK(2, 1)
 #define DF_TX_SOURCE_LEFT_ALIGN_MASK BIT(6)
 
 /* CV1800B_FIFO_THRESHOLD (0x028) */
-#define FIFO_RX_THRESHOLD_MASK      GENMASK(4, 0)
-#define FIFO_TX_THRESHOLD_MASK      GENMASK(20, 16)
+#define FIFO_RX_THRESHOLD_MASK	    GENMASK(4, 0)
+#define FIFO_TX_THRESHOLD_MASK	    GENMASK(20, 16)
 #define FIFO_TX_HIGH_THRESHOLD_MASK GENMASK(28, 24)
 
 /* CV1800B_SLOT_SETTING1 (0x008) */
@@ -118,10 +116,16 @@ enum cv1800b_tdm_word_length {
 struct cv1800b_i2s {
 	void __iomem *base;
 	struct clk *clk;
-	struct clk *clk_mclk;
+	struct clk *sysclk;
 	struct device *dev;
+	bool mclk_out;
 	struct snd_dmaengine_dai_dma_data playback_dma;
 	struct snd_dmaengine_dai_dma_data capture_dma;
+	bool slot_cfg_fixed;
+	u32 mclk_rate;
+	bool bclk_ratio_fixed;
+	u32 bclk_ratio;
+
 };
 
 static void cv1800b_setup_dma_struct(struct cv1800b_i2s *i2s,
@@ -176,42 +180,44 @@ static void cv1800b_reset_i2s(struct cv1800b_i2s *i2s)
 	writel(val, i2s->base + CV1800B_I2S_RESET);
 }
 
-static int cv1800b_i2s_hw_params(struct snd_pcm_substream *substream,
-				 struct snd_pcm_hw_params *params,
-				 struct snd_soc_dai *dai)
+static void cv1800b_set_mclk_div(struct cv1800b_i2s *i2s, u32 mclk_div)
 {
-	unsigned int rate = params_rate(params);
-	unsigned int channels = params_channels(params);
-	unsigned int physical_width = params_physical_width(params);
-	int width = params_width(params);
-	int ret;
-
-	if (width < 0)
-		return width;
-	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 	u32 val;
-	u32 word_length_val;
-	u32 tx_mode;
+	val = readl(i2s->base + CV1800B_CLK_CTRL1);
+	val = u32_replace_bits(val, mclk_div, CLK_MCLK_DIV_MASK);
+	writel(val, i2s->base + CV1800B_CLK_CTRL1);
+	dev_dbg(i2s->dev, "mclk_div is set to %u\n" , mclk_div);
+}
 
-	ret = clk_set_rate(i2s->clk_mclk, rate * channels * physical_width *
-						      CV1800B_BCLK_DIV *
-						      CV1800B_MCLK_DIV);
-	if (ret)
-		return ret;
+static void cv1800b_set_tx_mode(struct cv1800b_i2s *i2s, bool is_tx)
+{
+	u32 val;
+	val = readl(i2s->base + CV1800B_BLK_MODE_SETTING);
+	val = u32_replace_bits(val, is_tx, BLK_TX_MODE_MASK);
+	writel(val, i2s->base + CV1800B_BLK_MODE_SETTING);
+	dev_dbg(i2s->dev, "tx_mode is set to %u\n" , is_tx);
+}
 
-	val = readl(i2s->base + CV1800B_SLOT_SETTING1);
-	val = u32_replace_bits(val, physical_width - 1, SLOT_SIZE_MASK);
-	val = u32_replace_bits(val, width - 1, DATA_SIZE_MASK);
-	val = u32_replace_bits(val, channels - 1, SLOT_NUM_MASK);
-	writel(val, i2s->base + CV1800B_SLOT_SETTING1);
+static int cv1800b_set_bclk_div(struct cv1800b_i2s *i2s, u32 bclk_div)
+{
+	u32 val;
 
-	val = readl(i2s->base + CV1800B_FRAME_SETTING);
-	val = u32_replace_bits(val, (physical_width * 2) - 1,
-			       FRAME_LENGTH_MASK);
-	val = u32_replace_bits(val, (physical_width * 2) - 1,
-			       FS_ACTIVE_LENGTH_MASK);
-	writel(val, i2s->base + CV1800B_FRAME_SETTING);
+	if (bclk_div == 0 || bclk_div > 0xFFFF)
+		return -EINVAL;
 
+	val = readl(i2s->base + CV1800B_CLK_CTRL1);
+	val = u32_replace_bits(val, bclk_div, CLK_BCLK_DIV_MASK);
+	writel(val, i2s->base + CV1800B_CLK_CTRL1);
+	dev_dbg(i2s->dev, "bclk_div is set to %u\n" , bclk_div);
+	return 0;
+}
+
+/* set memory width of audio data , reg word_length */
+static int cv1800b_set_word_length(struct cv1800b_i2s *i2s,
+				    unsigned int physical_width)
+{
+	u8 word_length_val;
+	u32 val;
 	switch (physical_width) {
 	case 8:
 		word_length_val = CV1800B_WORD_LENGTH_8_BIT;
@@ -223,17 +229,190 @@ static int cv1800b_i2s_hw_params(struct snd_pcm_substream *substream,
 		word_length_val = CV1800B_WORD_LENGTH_32_BIT;
 		break;
 	default:
+		dev_dbg(i2s->dev, "cant set word_length field\n");
 		return -EINVAL;
 	}
 
 	val = readl(i2s->base + CV1800B_DATA_FORMAT);
 	val = u32_replace_bits(val, word_length_val, DF_WORD_LENGTH_MASK);
 	writel(val, i2s->base + CV1800B_DATA_FORMAT);
+	return 0;
+}
+static void cv1800b_enable_clocks(struct cv1800b_i2s *i2s, bool enabled) {
+	u32 val;
+	val = readl(i2s->base + CV1800B_CLK_CTRL0);
+	val = u32_replace_bits(val, 1, CLK_MCLK_OUT_EN_MASK);
+	val = u32_replace_bits(val, enabled, CLK_AUD_EN_MASK);
+	writel(val, i2s->base + CV1800B_CLK_CTRL0);
+}
+static int cv1800b_set_slot_settings(struct cv1800b_i2s *i2s, u32 slots,
+				     u32 physical_width)
+{
+	u32 slot_num;
+	u32 slot_size;
+	u32 data_size;
+	u32 frame_length;
+	u32 frame_active_length;
+	u32 val;
 
-	tx_mode = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? 1 : 0;
-	val = readl(i2s->base + CV1800B_BLK_MODE_SETTING);
-	val = u32_replace_bits(val, tx_mode, BLK_TX_MODE_MASK);
-	writel(val, i2s->base + CV1800B_BLK_MODE_SETTING);
+	if (!slots || !physical_width){
+		dev_err(i2s->dev, "frame or slot settings are not valid\n");
+		return -EINVAL;
+	}
+	if (slots > 16 || physical_width > 64){
+		dev_err(i2s->dev, "frame or slot settings are not valid\n");
+		return -EINVAL;
+	}
+
+	slot_num = slots - 1;
+	slot_size = physical_width - 1;
+	data_size = 16 - 1;
+	frame_length = 32 - 1;
+	frame_active_length = 16 - 1;
+
+	if (frame_length > 511 || frame_active_length > 255) {
+		dev_err(i2s->dev, "frame or slot settings are not valid\n");
+		return -EINVAL;
+	}
+
+	val = readl(i2s->base + CV1800B_SLOT_SETTING1);
+	val = u32_replace_bits(val, slot_size, SLOT_SIZE_MASK);
+	val = u32_replace_bits(val, data_size, DATA_SIZE_MASK);
+	val = u32_replace_bits(val, slot_num, SLOT_NUM_MASK);
+	writel(val, i2s->base + CV1800B_SLOT_SETTING1);
+
+	val = readl(i2s->base + CV1800B_FRAME_SETTING);
+	val = u32_replace_bits(val, frame_length, FRAME_LENGTH_MASK);
+	val = u32_replace_bits(val, frame_active_length, FS_ACTIVE_LENGTH_MASK);
+	writel(val, i2s->base + CV1800B_FRAME_SETTING);
+
+
+	dev_dbg(i2s->dev, "slot settings num: %u width: %u\n", slots, physical_width);
+	return 0;
+}
+
+/* calculate mclk_div.
+if requested value is bigger than optimal
+leave mclk_div as 1. cff clock is capable
+to handle it */
+static int cv1800b_calc_mclk_div(unsigned int target_mclk, u32 *mclk_div)
+{
+	*mclk_div = 1;
+	if (target_mclk == 0) {
+		return -EINVAL;
+	}
+	/* optimal parent frequency is close to CV1800B_DEF_FREQ */
+	if (target_mclk < CV1800B_DEF_FREQ) {
+		*mclk_div = DIV_ROUND_CLOSEST(CV1800B_DEF_FREQ, target_mclk);
+		if (*mclk_div > 0xFFFF)
+			return -EINVAL;
+	}
+	return 0;
+}
+
+/* 	set CCF clock and divider for this clock
+ *	mclk_clock = ccf_clock / mclk_div
+ */
+static int cv1800b_i2s_set_rate_for_mclk(struct cv1800b_i2s *i2s,
+					 unsigned int target_mclk)
+{
+	u32 mclk_div = 1;
+	u64 tmp;
+	int ret;
+	unsigned long clk_rate;
+	unsigned long actual;
+
+	ret = cv1800b_calc_mclk_div(target_mclk, &mclk_div);
+	if (ret) {
+		dev_dbg(i2s->dev, "cant calc mclk_div for freq %u\n",
+			target_mclk);
+		return ret;
+	}
+
+	tmp = (u64)target_mclk * mclk_div;
+	if (tmp > ULONG_MAX) {
+		dev_err(i2s->dev, "clk_rate overflow: freq=%u div=%u\n",
+			target_mclk, mclk_div);
+		return -ERANGE;
+	}
+
+	clk_rate = (unsigned long)tmp;
+
+	cv1800b_enable_clocks(i2s, false);
+
+	ret = clk_set_rate(i2s->sysclk, clk_rate);
+	if (ret)
+		return ret;
+
+	// todo test with exact value before commit.
+	// later check if rounded and provide warning
+	actual = clk_get_rate(i2s->sysclk);
+	if (clk_rate != actual) {
+		dev_err_ratelimited(i2s->dev,
+				    "clk_set_rate failed %lu, actual is %lu\n",
+				    clk_rate, actual);
+		// return -EINVAL;
+	}
+
+	cv1800b_set_mclk_div(i2s, mclk_div);
+	cv1800b_enable_clocks(i2s, true);
+
+	return 0;
+}
+
+static int cv1800b_i2s_hw_params(struct snd_pcm_substream *substream,
+				 struct snd_pcm_hw_params *params,
+				 struct snd_soc_dai *dai)
+{
+	unsigned int rate = params_rate(params);
+	unsigned int channels = params_channels(params);
+	unsigned int physical_width = params_physical_width(params);
+	bool tx_mode = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? 1 : 0;
+	int ret;
+	u32 bclk_div;
+	u32 bclk_ratio;
+	u32 mclk_rate;
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+
+	if (!channels || !rate || !physical_width){
+		dev_dbg(i2s->dev, "cpu 11\n");
+		return -EINVAL;
+	}
+	if (!i2s->slot_cfg_fixed) {
+		ret = cv1800b_set_slot_settings(i2s, channels, physical_width);
+		if (ret) {
+			dev_dbg(i2s->dev, "cpu 12\n");
+			return ret;
+		}
+	}
+	if (i2s->mclk_rate) {
+		mclk_rate = i2s->mclk_rate;
+	} else {
+		dev_dbg(i2s->dev, "mclk is not set by machine driver\n");
+		ret = cv1800b_i2s_set_rate_for_mclk(
+			i2s, rate * CV1800B_DEF_MCLK_FS_RATIO);
+		if (ret)
+			return ret;
+		mclk_rate = rate * CV1800B_DEF_MCLK_FS_RATIO;
+	}
+
+	bclk_ratio = (i2s->bclk_ratio_fixed) ? i2s->bclk_ratio :
+					       (physical_width * channels);
+
+	if (mclk_rate % (rate * bclk_ratio))
+		dev_warn(i2s->dev, "mclk rate is not aligned to bclk or rate\n");
+
+	bclk_div = DIV_ROUND_CLOSEST(mclk_rate, rate * bclk_ratio);
+
+	ret = cv1800b_set_bclk_div(i2s, bclk_div);
+	if (ret)
+		return ret;
+
+	ret = cv1800b_set_word_length(i2s, physical_width);
+	if (ret)
+		return ret;
+
+	cv1800b_set_tx_mode(i2s, tx_mode);
 
 	cv1800b_reset_fifo(i2s);
 	cv1800b_reset_i2s(i2s);
@@ -261,6 +440,7 @@ static int cv1800b_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
 		val = u32_replace_bits(val, 0, I2S_ENABLE_MASK);
 		break;
 	default:
+		dev_dbg(i2s->dev, "%s\n", __func__);
 		return -EINVAL;
 	}
 	writel(val, i2s->base + CV1800B_I2S_ENABLE);
@@ -274,8 +454,8 @@ static int cv1800b_i2s_startup(struct snd_pcm_substream *substream,
 	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 	struct snd_soc_dai_link *dai_link = rtd->dai_link;
 
-	dev_dbg(i2s->dev, "%s: dai=%s substream=%d i2s=%p\n", __func__,
-		dai->name, substream->stream, i2s);
+	dev_dbg(i2s->dev, "%s: dai=%s substream=%d\n", __func__, dai->name,
+		substream->stream);
 	/**
 	 * Ensure DMA is stopped before DAI
 	 * shutdown (prevents DW AXI DMAC stop/busy on next open).
@@ -303,16 +483,26 @@ static int cv1800b_i2s_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	u32 val;
 	u32 master;
 
+	/* only i2s format is supported */
+	if ((fmt & SND_SOC_DAIFMT_FORMAT_MASK) != SND_SOC_DAIFMT_I2S)
+		return -EINVAL;
+	// todo test before uncomment
+	// val = readl(i2s->base + CV1800B_SLOT_SETTING1);
+	// val = u32_replace_bits(val, 1, FB_OFFSET_MASK);
+	// writel(val, i2s->base + CV1800B_SLOT_SETTING1);
+
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBP_CFP:
-		dev_dbg(i2s->dev, "set to master mode");
+		dev_dbg(i2s->dev, "set to master mode\n");
 		master = 1;
 		break;
 
 	case SND_SOC_DAIFMT_CBC_CFC:
+		dev_dbg(i2s->dev, "set to slave slave\n");
 		master = 0;
 		break;
 	default:
+		dev_dbg(i2s->dev, "%s\n", __func__);
 		return -EINVAL;
 	}
 
@@ -322,28 +512,78 @@ static int cv1800b_i2s_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	return 0;
 }
 
+static int cv1800b_i2s_dai_set_bclk_ratio(struct snd_soc_dai *dai,
+					  unsigned int ratio)
+{
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+
+	if (ratio == 0) {
+		return -EINVAL;
+	}
+	i2s->bclk_ratio = ratio;
+	i2s->bclk_ratio_fixed = true;
+	return 0;
+}
+
+
+
+
+static int cv1800b_i2s_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
+				      unsigned int freq, int dir)
+{
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+	int ret;
+	ret = cv1800b_i2s_set_rate_for_mclk(i2s, freq);
+	if (ret)
+		return ret;
+
+	i2s->mclk_rate = freq;
+	return 0;
+}
+
+static int cv1800b_i2s_dai_set_tdm_slot(struct snd_soc_dai *dai,
+					unsigned int tx_mask,
+					unsigned int rx_mask, int slots,
+					int slot_width)
+{
+	int ret;
+	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
+
+	if (slots <= 0 || slot_width <= 0)
+		return -EINVAL;
+
+	ret = cv1800b_set_slot_settings(i2s, slots, slot_width);
+	if (ret)
+		return ret;
+	i2s->slot_cfg_fixed = true;
+	return 0;
+}
+
 static const struct snd_soc_dai_ops cv1800b_i2s_dai_ops = {
 	.probe = cv1800b_i2s_dai_probe,
 	.startup = cv1800b_i2s_startup,
 	.hw_params = cv1800b_i2s_hw_params,
 	.trigger = cv1800b_i2s_trigger,
 	.set_fmt = cv1800b_i2s_dai_set_fmt,
+	.set_bclk_ratio = cv1800b_i2s_dai_set_bclk_ratio,
+	.set_sysclk = cv1800b_i2s_dai_set_sysclk,
+	.set_tdm_slot = cv1800b_i2s_dai_set_tdm_slot,
 };
 
 static struct snd_soc_dai_driver cv1800b_i2s_dai_template = {
 	.name = "cv1800b-i2s",
 	.playback = {
 		.stream_name = "Playback",
-		.channels_min = 2,
+		.channels_min = 1,
 		.channels_max = 2,
-		.rates = SNDRV_PCM_RATE_48000,
+		.rates = SNDRV_PCM_RATE_8000_192000,
 		.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
 	},
 	.capture = {
 		.stream_name = "Capture",
-		.channels_min = 2,
+		.channels_min = 1,
 		.channels_max = 2,
-		.rates = SNDRV_PCM_RATE_48000,
+		.rates = SNDRV_PCM_RATE_8000_192000,
 		.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
 	},
 	.ops = &cv1800b_i2s_dai_ops,
@@ -385,15 +625,10 @@ static void cv1800b_i2s_setup_tdm(struct cv1800b_i2s *i2s)
 	val = u32_replace_bits(val, 1, BLK_DMA_MODE_MASK);
 	writel(val, i2s->base + CV1800B_BLK_MODE_SETTING);
 
-	val = readl(i2s->base + CV1800B_CLK_CTRL1);
-	val = u32_replace_bits(val, CV1800B_MCLK_DIV, CLK_MCLK_DIV_MASK);
-	val = u32_replace_bits(val, CV1800B_BCLK_DIV, CLK_BCLK_DIV_MASK);
-	writel(val, i2s->base + CV1800B_CLK_CTRL1);
-
 	val = readl(i2s->base + CV1800B_CLK_CTRL0);
 	val = u32_replace_bits(val, 0, CLK_AUD_CLK_SEL_MASK);
-	val = u32_replace_bits(val, 0, CLK_MCLK_OUT_EN_MASK);
-	val = u32_replace_bits(val, 1, CLK_AUD_EN_MASK);
+	val = u32_replace_bits(val, 1, CLK_MCLK_OUT_EN_MASK);
+	val = u32_replace_bits(val, 0, CLK_AUD_EN_MASK);
 	writel(val, i2s->base + CV1800B_CLK_CTRL0);
 
 	val = readl(i2s->base + CV1800B_FIFO_THRESHOLD);
@@ -405,51 +640,6 @@ static void cv1800b_i2s_setup_tdm(struct cv1800b_i2s *i2s)
 	val = readl(i2s->base + CV1800B_I2S_ENABLE);
 	val = u32_replace_bits(val, 0, I2S_ENABLE_MASK);
 	writel(val, i2s->base + CV1800B_I2S_ENABLE);
-}
-
-static int cv1800b_try_select_state_optional(struct device *dev,
-					     const char *name)
-{
-	struct mux_state *st;
-	int ret;
-
-	st = devm_mux_state_get(dev, name);
-	if (IS_ERR(st)) {
-		ret = PTR_ERR(st);
-
-		if (ret == -EPROBE_DEFER)
-			return ret;
-		if (ret == -ENOENT || ret == -ENODEV || ret == -ENODATA)
-			return 0;
-
-		dev_err(dev, "mux state '%s' get failed: %d\n", name, ret);
-		return ret;
-	}
-
-	ret = mux_state_try_select(st);
-	if (ret)
-		return ret;
-
-	return 0;
-}
-
-static int cv1800b_audio_mux_probe(struct device *dev)
-{
-	static const char * const muxes[] = {
-		"fs-in",
-		"sclk-in",
-		"sdo-out",
-		"sdi-in",
-	};
-	int i, ret;
-
-	for (i = 0; i < ARRAY_SIZE(muxes); i++) {
-		ret = cv1800b_try_select_state_optional(dev, muxes[i]);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
 }
 
 static int cv1800b_i2s_probe(struct platform_device *pdev)
@@ -470,6 +660,7 @@ static int cv1800b_i2s_probe(struct platform_device *pdev)
 		return PTR_ERR(regs);
 	i2s->dev = &pdev->dev;
 	i2s->base = regs;
+	i2s->mclk_out = of_property_read_bool(dev->of_node, "sophgo,mclk-out");
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res)
@@ -480,17 +671,13 @@ static int cv1800b_i2s_probe(struct platform_device *pdev)
 	if (IS_ERR(i2s->clk))
 		return dev_err_probe(dev, PTR_ERR(i2s->clk),
 				     "failed to get+enable i2s\n");
-	i2s->clk_mclk = devm_clk_get_enabled(dev, "mclk");
-	if (IS_ERR(i2s->clk_mclk))
-		return dev_err_probe(dev, PTR_ERR(i2s->clk_mclk),
+	i2s->sysclk = devm_clk_get_enabled(dev, "mclk");
+	if (IS_ERR(i2s->sysclk))
+		return dev_err_probe(dev, PTR_ERR(i2s->sysclk),
 				     "failed to get+enable mclk\n");
 
 	platform_set_drvdata(pdev, i2s);
 	cv1800b_i2s_setup_tdm(i2s);
-
-	ret = cv1800b_audio_mux_probe(dev);
-	if (ret)
-		return ret;
 
 	dai = devm_kmemdup(dev, &cv1800b_i2s_dai_template, sizeof(*dai),
 			   GFP_KERNEL);
