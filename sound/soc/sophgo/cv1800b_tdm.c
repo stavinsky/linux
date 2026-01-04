@@ -266,9 +266,9 @@ static int cv1800b_set_slot_settings(struct cv1800b_i2s *i2s, u32 slots,
 
 	slot_num = slots - 1;
 	slot_size = physical_width - 1;
-	data_size = 16 - 1;
-	frame_length = 32 - 1;
-	frame_active_length = 16 - 1;
+	data_size = physical_width - 1;
+	frame_length = (physical_width * slots) - 1;
+	frame_active_length = physical_width - 1;
 
 	if (frame_length > 511 || frame_active_length > 255) {
 		dev_err(i2s->dev, "frame or slot settings are not valid\n");

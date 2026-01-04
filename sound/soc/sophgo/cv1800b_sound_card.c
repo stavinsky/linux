@@ -64,7 +64,7 @@ static int cv1800b_aiao_hw_params(struct snd_pcm_substream *substream,
 		&priv->links_cfg[rtd->dai_link->id];
 	/* we support only i2s 32 bit per channel and 2 channels*/
 	u32 tdm_slots = 2;
-	u32 tdm_slot_width = 32;
+	u32 tdm_slot_width = 16;
 	u32 bclk_ratio = tdm_slot_width * tdm_slots;
 	u32 tx_mask = (1U << tdm_slots) - 1;
 	u32 rx_mask = (1U << tdm_slots) - 1;
@@ -92,21 +92,21 @@ static int cv1800b_aiao_hw_params(struct snd_pcm_substream *substream,
 			return ret;
 		}
 	}
-	// if (cfg->is_internal) {
-	// 	for_each_rtd_codec_dais(rtd, i, dai) {
-	// 		ret = snd_soc_dai_set_sysclk(dai, 0, target_mclk,
-	// 					     SND_SOC_CLOCK_OUT);
-	// 		if (ret) {
-	// 			dev_dbg(priv->dev, "4\n");
-	// 			return ret;
-	// 		}
-	// 		ret = snd_soc_dai_set_bclk_ratio(dai, bclk_ratio);
-	// 		if (ret) {
-	// 			dev_dbg(priv->dev, "5\n");
-	// 			return ret;
-	// 		}
-	// 	}
-	// }
+	if (cfg->is_internal) {
+		for_each_rtd_codec_dais(rtd, i, dai) {
+			ret = snd_soc_dai_set_sysclk(dai, 0, target_mclk,
+						     SND_SOC_CLOCK_OUT);
+			if (ret) {
+				dev_dbg(priv->dev, "4\n");
+				return ret;
+			}
+			ret = snd_soc_dai_set_bclk_ratio(dai, bclk_ratio);
+			if (ret) {
+				dev_dbg(priv->dev, "5\n");
+				return ret;
+			}
+		}
+	}
 	return 0;
 }
 static void cv1800b_aiao_link_shutdown(struct snd_pcm_substream *substream)

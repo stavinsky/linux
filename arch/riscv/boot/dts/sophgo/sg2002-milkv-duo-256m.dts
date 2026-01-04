@@ -156,8 +156,8 @@
 
 / {
 	int_adc: my-adc {
-		// compatible = "sophgo,cv1800b-adc-codec";
-		compatible = "invensense,ics43432";
+		compatible = "sophgo,cv1800b-adc-codec";
+		// compatible = "invensense,ics43432";
 
 		#sound-dai-cells = <0>;
 		reg = <0x0300A100 0x100>;
