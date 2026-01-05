@@ -247,27 +247,25 @@ static void cv1800b_enable_clocks(struct cv1800b_i2s *i2s, bool enabled) {
 }
 
 static int cv1800b_set_slot_settings(struct cv1800b_i2s *i2s, u32 slots,
-				     u32 physical_width)
+				     u32 physical_width, u32 data_size)
 {
 	u32 slot_num;
 	u32 slot_size;
-	u32 data_size;
 	u32 frame_length;
 	u32 frame_active_length;
 	u32 val;
 
-	if (!slots || !physical_width){
+	if (!slots || !physical_width || !data_size){
 		dev_err(i2s->dev, "frame or slot settings are not valid\n");
 		return -EINVAL;
 	}
-	if (slots > 16 || physical_width > 64){
+	if (slots > 16 || physical_width > 64 || data_size > 32){
 		dev_err(i2s->dev, "frame or slot settings are not valid\n");
 		return -EINVAL;
 	}
 
 	slot_num = slots - 1;
 	slot_size = physical_width - 1;
-	data_size = physical_width - 1;
 	frame_length = (physical_width * slots) - 1;
 	frame_active_length = physical_width - 1;
 
@@ -278,7 +276,7 @@ static int cv1800b_set_slot_settings(struct cv1800b_i2s *i2s, u32 slots,
 
 	val = readl(i2s->base + CV1800B_SLOT_SETTING1);
 	val = u32_replace_bits(val, slot_size, SLOT_SIZE_MASK);
-	val = u32_replace_bits(val, 24, DATA_SIZE_MASK);
+	val = u32_replace_bits(val, data_size - 1, DATA_SIZE_MASK);
 	val = u32_replace_bits(val, slot_num, SLOT_NUM_MASK);
 	writel(val, i2s->base + CV1800B_SLOT_SETTING1);
 
@@ -368,6 +366,9 @@ static int cv1800b_i2s_hw_params(struct snd_pcm_substream *substream,
 	unsigned int rate = params_rate(params);
 	unsigned int channels = params_channels(params);
 	unsigned int physical_width = params_physical_width(params);
+	int data_width = params_width(params);
+	if (data_width < 0)
+		return data_width;
 	bool tx_mode = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? 1 : 0;
 	int ret;
 	u32 bclk_div;
@@ -380,7 +381,7 @@ static int cv1800b_i2s_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 	if (!i2s->slot_cfg_fixed) {
-		ret = cv1800b_set_slot_settings(i2s, channels, physical_width);
+		ret = cv1800b_set_slot_settings(i2s, channels, physical_width, data_width);
 		if (ret) {
 			dev_dbg(i2s->dev, "cpu 12\n");
 			return ret;
@@ -544,23 +545,6 @@ static int cv1800b_i2s_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 	return 0;
 }
 
-static int cv1800b_i2s_dai_set_tdm_slot(struct snd_soc_dai *dai,
-					unsigned int tx_mask,
-					unsigned int rx_mask, int slots,
-					int slot_width)
-{
-	int ret;
-	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
-
-	if (slots <= 0 || slot_width <= 0)
-		return -EINVAL;
-
-	ret = cv1800b_set_slot_settings(i2s, slots, slot_width);
-	if (ret)
-		return ret;
-	i2s->slot_cfg_fixed = true;
-	return 0;
-}
 
 static const struct snd_soc_dai_ops cv1800b_i2s_dai_ops = {
 	.probe = cv1800b_i2s_dai_probe,
@@ -570,7 +554,6 @@ static const struct snd_soc_dai_ops cv1800b_i2s_dai_ops = {
 	.set_fmt = cv1800b_i2s_dai_set_fmt,
 	.set_bclk_ratio = cv1800b_i2s_dai_set_bclk_ratio,
 	.set_sysclk = cv1800b_i2s_dai_set_sysclk,
-	.set_tdm_slot = cv1800b_i2s_dai_set_tdm_slot,
 };
 
 static struct snd_soc_dai_driver cv1800b_i2s_dai_template = {

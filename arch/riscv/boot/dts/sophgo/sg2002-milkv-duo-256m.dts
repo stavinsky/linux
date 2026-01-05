@@ -145,12 +145,10 @@
 
 &i2s0 {
 	status = "okay";
-	sophgo,mclk_out;
 	#sound-dai-cells = <0>;
 };
 &i2s3 {
 	status = "okay";
-	sophgo,mclk_out;
 	#sound-dai-cells = <0>;
 };
 
@@ -158,15 +156,16 @@
 	int_adc: my-adc {
 		compatible = "sophgo,cv1800b-adc-codec";
 		// compatible = "invensense,ics43432";
-
 		#sound-dai-cells = <0>;
 		reg = <0x0300A100 0x100>;
 
 	};
 
-	ext_dac: my-dac {
-		compatible = "maxim,max98360a";
+	int_dac: my-dac {
+		// compatible = "maxim,max98360a";
+		compatible = "sophgo,cv1800b-dac-codec";
 		#sound-dai-cells = <0>;
+		reg = <0x0300A000 0x100>;
 	};
 	ext_adc: my-ext-adc {
 		compatible = "invensense,ics43432";
@@ -174,50 +173,66 @@
 	};
 
 	sound {
-		compatible = "sophgo,cv1800b-aiao";
-		model = "cv1800b audio";
-		reg = <0x04108000 0x1000>;
-		link@1 {
-			dai-format = "i2s";
-			bitclock-master = <&clock_maser>;
-			frame-master = <&clock_maser>;
-			sophgo,sdo-out = <CV1800B_SND_CLK_MUX_INT_ADC>;
-			sophgo,sdi-in = <CV1800B_SND_CLK_MUX_INT_ADC>;
-			sophgo,fs-in = <CV1800B_SND_CLK_MUX_INT_ADC>;
-			sophgo,sclk-in = <CV1800B_SND_CLK_MUX_INT_ADC>;
-			link-name = "i2s1-int-adc";
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "cv1800b card";
+		#address-cells = <1>;
+        #size-cells = <0>;
+		// reg = <0x04108000 0x1000>;
+		simple-audio-card,dai-link@0 {
+			reg = <0>;
+			format = "i2s";
+			bitclock-master = <&clock_maser0>;
+			frame-master = <&clock_maser0>;
 
-			clock_maser: codec {
+			codec {
+				sound-dai = <&int_dac>;
+
+			};
+			clock_maser0: cpu {
+				system-clock-frequency = <12288000>;
+				system-clock-fixed;
+				mclk-fs = <256>;
+				sound-dai = <&i2s3>;
+			};
+		};
+
+		simple-audio-card,dai-link@1 {
+			reg = <1>;
+			format = "i2s";
+			bitclock-master = <&clock_maser1>;
+			frame-master = <&clock_maser1>;
+
+
+			clock_maser1: codec {
 				sound-dai = <&int_adc>;
-
 			};
 
 			cpu {
-				sound-dai = <&i2s3>;
+				mclk-fs = <256>;
+				system-clock-frequency = <12288000>;
+				system-clock-fixed;
+				sound-dai = <&i2s0>;
 			};
-
 		};
 
-		link@2 {
-			dai-format = "i2s";
-			bitclock-master = <&clock_master_2>;
-			frame-master = <&clock_master_2>;
-			sophgo,sdo-out = <CV1800B_SND_CLK_MUX_I2S2>;
-			sophgo,sdi-in = <CV1800B_SND_CLK_MUX_I2S2>;
-			sophgo,fs-in = <CV1800B_SND_CLK_MUX_I2S2>;
-			sophgo,sclk-in = <CV1800B_SND_CLK_MUX_I2S2>;
-			link-name = "i2s2-ext-adc";
+		simple-audio-card,dai-link@2 {
+			reg = <2>;
+			format = "i2s";
+			bitclock-master = <&clock_maser2>;
+			frame-master = <&clock_maser2>;
+
 
 			codec {
 				sound-dai = <&ext_adc>;
-
 			};
 
-			clock_master_2: cpu {
+			clock_maser2: cpu {
+				mclk-fs = <256>;
+				system-clock-frequency = <12288000>;
+				system-clock-fixed;
 				sound-dai = <&i2s2>;
-
 			};
-
 		};
+
 	};
 };
