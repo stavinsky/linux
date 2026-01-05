@@ -241,10 +241,11 @@ static int cv1800b_set_word_length(struct cv1800b_i2s *i2s,
 static void cv1800b_enable_clocks(struct cv1800b_i2s *i2s, bool enabled) {
 	u32 val;
 	val = readl(i2s->base + CV1800B_CLK_CTRL0);
-	val = u32_replace_bits(val, 1, CLK_MCLK_OUT_EN_MASK);
+	val = u32_replace_bits(val, enabled, CLK_MCLK_OUT_EN_MASK);
 	val = u32_replace_bits(val, enabled, CLK_AUD_EN_MASK);
 	writel(val, i2s->base + CV1800B_CLK_CTRL0);
 }
+
 static int cv1800b_set_slot_settings(struct cv1800b_i2s *i2s, u32 slots,
 				     u32 physical_width)
 {
@@ -277,7 +278,7 @@ static int cv1800b_set_slot_settings(struct cv1800b_i2s *i2s, u32 slots,
 
 	val = readl(i2s->base + CV1800B_SLOT_SETTING1);
 	val = u32_replace_bits(val, slot_size, SLOT_SIZE_MASK);
-	val = u32_replace_bits(val, data_size, DATA_SIZE_MASK);
+	val = u32_replace_bits(val, 24, DATA_SIZE_MASK);
 	val = u32_replace_bits(val, slot_num, SLOT_NUM_MASK);
 	writel(val, i2s->base + CV1800B_SLOT_SETTING1);
 
@@ -533,6 +534,8 @@ static int cv1800b_i2s_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 {
 	struct cv1800b_i2s *i2s = snd_soc_dai_get_drvdata(dai);
 	int ret;
+
+	dev_dbg(i2s->dev, "%s called with %u", __func__, freq);
 	ret = cv1800b_i2s_set_rate_for_mclk(i2s, freq);
 	if (ret)
 		return ret;
@@ -678,6 +681,9 @@ static int cv1800b_i2s_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, i2s);
 	cv1800b_i2s_setup_tdm(i2s);
+
+	/* setting up default mclk suitable for internal codecs */
+	cv1800b_i2s_set_rate_for_mclk(i2s, 12288000);
 
 	dai = devm_kmemdup(dev, &cv1800b_i2s_dai_template, sizeof(*dai),
 			   GFP_KERNEL);

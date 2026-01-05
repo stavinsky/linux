@@ -134,7 +134,7 @@ static unsigned int cv1800b_adc_calc_db(u32 ana0, bool right)
 	return 2 * step + 6 * coarse + (g6db ? 6 : 0);
 }
 
-static int cv1800b_adc_hw_params(struct snd_pcm_substream *substream,
+static int cv1800b_dac_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *params,
 				 struct snd_soc_dai *dai)
 {
@@ -152,7 +152,7 @@ static int cv1800b_adc_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int cv1800b_adc_dai_trigger(struct snd_pcm_substream *substream, int cmd,
+static int cv1800b_dac_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 				   struct snd_soc_dai *dai)
 {
 	struct cv1800b_priv *priv = snd_soc_dai_get_drvdata(dai);
@@ -173,7 +173,7 @@ static int cv1800b_adc_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 	return 0;
 }
 
-static int cv1800b_adc_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
+static int cv1800b_dac_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 				      unsigned int freq, int dir)
 {
 	struct cv1800b_priv *priv = snd_soc_dai_get_drvdata(dai);
@@ -182,20 +182,20 @@ static int cv1800b_adc_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 	return 0;
 }
 
-static const struct snd_soc_dai_ops cv1800b_adc_dai_ops = {
-	.hw_params = cv1800b_adc_hw_params,
-	.set_sysclk = cv1800b_adc_dai_set_sysclk,
-	.trigger = cv1800b_adc_dai_trigger,
+static const struct snd_soc_dai_ops cv1800b_dac_dai_ops = {
+	.hw_params = cv1800b_dac_hw_params,
+	.set_sysclk = cv1800b_dac_dai_set_sysclk,
+	.trigger = cv1800b_dac_dai_trigger,
 };
 
-static struct snd_soc_dai_driver cv1800b_adc_dai = {
+static struct snd_soc_dai_driver cv1800b_dac_dai = {
 	.name = "adc-hifi",
 	.capture = { .stream_name = "ADC Capture",
 		     .channels_min = 1,
 		     .channels_max = 2,
 		     .rates = SNDRV_PCM_RATE_8000_48000,
 		     .formats = SNDRV_PCM_FMTBIT_S16_LE },
-	.ops = &cv1800b_adc_dai_ops,
+	.ops = &cv1800b_dac_dai_ops,
 };
 
 static int cv1800b_adc_volume_get(struct snd_kcontrol *kcontrol,
@@ -204,7 +204,6 @@ static int cv1800b_adc_volume_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct cv1800b_priv *priv = snd_soc_component_get_drvdata(component);
 	u32 ana0 = readl(priv->regs + CV1800B_RXADC_ANA0);
-	u32 val;
 
 	unsigned int left = cv1800b_adc_calc_db(ana0, false);
 	unsigned int right = cv1800b_adc_calc_db(ana0, true);
@@ -264,20 +263,20 @@ static int cv1800b_adc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 	return devm_snd_soc_register_component(
-		&pdev->dev, &cv1800b_adc_component, &cv1800b_adc_dai, 1);
+		&pdev->dev, &cv1800b_adc_component, &cv1800b_dac_dai, 1);
 }
 
-static const struct of_device_id cv1800b_adc_of_match[] = {
+static const struct of_device_id cv1800b_dac_of_match[] = {
 	{ .compatible = "sophgo,cv1800b-adc-codec" },
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, cv1800b_adc_of_match);
+MODULE_DEVICE_TABLE(of, cv1800b_dac_of_match);
 
 static struct platform_driver cv1800b_adc_driver = {
 	.probe = cv1800b_adc_probe,
 	.driver = {
 		.name = "cv1800b-adc-codec",
-		.of_match_table = cv1800b_adc_of_match,
+		.of_match_table = cv1800b_dac_of_match,
 	},
 };
 module_platform_driver(cv1800b_adc_driver);
